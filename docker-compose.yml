@@ -1,0 +1,19 @@
+services:
+  rig-landing-page:
+    build:
+      context: .
+      args:
+        VITE_API_URL: https://api.richmondgroup.vn/api
+    container_name: rig-landing-page
+    ports:
+      - "3001:80"
+    environment:
+      NODE_ENV: production
+      VITE_API_URL: https://api.richmondgroup.vn/api
+    restart: unless-stopped
+    networks:
+      - rig-landing-be_rig_network
+
+networks:
+  rig-landing-be_rig_network:
+    external: true
