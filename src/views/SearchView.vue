@@ -17,15 +17,12 @@
                     @search="handleSearch"
                     style="border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08)"
                 />
-                <div style="margin-top: 8px; font-size: 12px; color: #999">
-                    💡 Tip: Leave search empty to browse all documents
-                </div>
             </div>
 
             <!-- Filters Section -->
             <div class="filters-section">
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px">
-                    <span style="font-weight: 600; font-size: 14px">📋 Filters</span>
+                    <!-- <span style="font-weight: 600; font-size: 14px">📋 Filters</span> -->
                     <Tag v-if="hasActiveFilters" color="blue">{{ activeFilterCount }} active</Tag>
                 </div>
 
@@ -270,7 +267,6 @@ const handleSearch = async (query: string) => {
     // If search is empty, show all documents
     if (!query.trim() && selectedCategory.value === '' && selectedTags.value.length === 0) {
         searched.value = false
-        return
     }
 
     searched.value = true

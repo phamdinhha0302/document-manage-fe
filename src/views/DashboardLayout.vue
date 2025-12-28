@@ -1,57 +1,65 @@
 <template>
     <div class="dashboard-container">
         <Layout style="min-height: 100vh">
-            <!-- Sidebar -->
-            <LayoutSider v-model:collapsed="collapsed" :trigger="null" collapsible>
-                <Menu v-model:selectedKeys="selectedKeys" mode="inline">
-                    <MenuItem key="1">
+            <LayoutSider v-model:collapsed="collapsed" :trigger="null" collapsible width="250">
+                <div class="logo">
+                    <h2 v-if="!collapsed">Document Manager</h2>
+                    <h2 v-else>T</h2>
+                </div>
+
+                <Menu 
+                    v-model:selectedKeys="selectedKeys" 
+                    mode="inline" 
+                    theme="dark"
+                    @click="handleMenuClick"
+                >
+                    <MenuItem key="/dashboard">
                         <template #icon>
                             <HomeOutlined />
                         </template>
-                        <router-link to="/dashboard">Dashboard</router-link>
+                        <span>Dashboard</span>
                     </MenuItem>
 
-                    <MenuItem key="2">
+                    <MenuItem key="/documents">
                         <template #icon>
                             <FileOutlined />
                         </template>
-                        <router-link to="/documents">My Documents</router-link>
+                        <span>My Documents</span>
                     </MenuItem>
 
-                    <MenuItem key="3">
+                    <MenuItem key="/upload">
                         <template #icon>
                             <UploadOutlined />
                         </template>
-                        <router-link to="/upload">Upload Document</router-link>
+                        <span>Upload Document</span>
                     </MenuItem>
 
-                    <MenuItem key="4">
+                    <MenuItem key="/search">
                         <template #icon>
                             <SearchOutlined />
                         </template>
-                        <router-link to="/search">Search</router-link>
+                        <span>Search</span>
                     </MenuItem>
 
                     <Divider />
 
-                    <MenuItem v-if="user?.role === 'admin'" key="5">
+                    <MenuItem v-if="user?.role === 'admin'" key="/admin">
                         <template #icon>
                             <SettingOutlined />
                         </template>
-                        <router-link to="/admin">Admin</router-link>
+                        <span>Admin</span>
                     </MenuItem>
 
-                    <MenuItem key="6">
+                    <MenuItem key="logout" @click="handleLogout">
                         <template #icon>
                             <LogoutOutlined />
                         </template>
-                        <span @click="handleLogout" style="cursor: pointer">Logout</span>
+                        <span>Logout</span>
                     </MenuItem>
                 </Menu>
             </LayoutSider>
 
             <Layout>
-                <!-- Header -->
                 <LayoutHeader class="dashboard-header">
                     <div class="header-content">
                         <Button 
@@ -61,18 +69,23 @@
                             class="menu-toggle-btn"
                         />
                         <div class="user-section">
-                            <span class="user-name">{{ user?.fullName }}</span>
+                            <span class="user-name">{{ user?.fullName || 'User' }}</span>
                             <Avatar 
-                                :src="`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`"
+                                :src="user?.email ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}` : undefined"
                                 class="user-avatar"
-                            />
+                            >
+                                {{ user?.fullName?.charAt(0)?.toUpperCase() }}
+                            </Avatar>
                         </div>
                     </div>
                 </LayoutHeader>
 
-                <!-- Content -->
                 <LayoutContent class="dashboard-content">
-                    <router-view />
+                    <router-view v-slot="{ Component }">
+                        <transition name="fade" mode="out-in">
+                            <component :is="Component" />
+                        </transition>
+                    </router-view>
                 </LayoutContent>
             </Layout>
         </Layout>
@@ -80,136 +93,128 @@
 </template>
 
 <script setup lang="ts">
-import { ref, h } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, h, watch, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '@/composables/useAuthComposable'
 import { message, Layout, LayoutSider, LayoutHeader, LayoutContent, Menu, MenuItem, Divider, Button, Avatar } from 'ant-design-vue'
 import { HomeOutlined, FileOutlined, UploadOutlined, SearchOutlined, SettingOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons-vue'
 
 const router = useRouter()
+const route = useRoute()
 const { user, logout } = useAuth()
 
 const collapsed = ref(false)
-const selectedKeys = ref(['1'])
+const selectedKeys = ref<string[]>([])
 
-const handleLogout = () => {
-    logout()
-    message.success('Logged out successfully')
-    router.push('/login')
+// Function to handle standard menu navigation
+const handleMenuClick = (e: { key: string }) => {
+    if (e.key === 'logout') return; // Logout is handled separately
+    router.push(e.key);
+}
+
+// Watch the route to update the menu selection automatically
+// This fixes the issue where reloading the page resets the menu to "Dashboard"
+watch(
+    () => route.path,
+    (newPath) => {
+        selectedKeys.value = [newPath];
+    },
+    { immediate: true }
+)
+
+const handleLogout = async () => {
+    try {
+        await logout()
+        message.success('Logged out successfully')
+        router.push('/login')
+    } catch (error) {
+        message.error('Failed to logout')
+    }
 }
 </script>
 
 <style scoped>
+/* Define Theme Variables for easy editing */
 .dashboard-container {
+    --primary-gold: #48cae4;
+    --primary-gold-dim: rgba(187, 147, 86, 0.2);
+    --sidebar-bg-start: #0f2438;
+    --sidebar-bg-end: #1a3a52;
+    --text-white: rgba(255, 255, 255, 0.85);
+    
     background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
 }
 
 :deep(.ant-layout-sider) {
-    background: linear-gradient(180deg, #0f2438 0%, #1a3a52 100%);
+    background: linear-gradient(180deg, var(--sidebar-bg-start) 0%, var(--sidebar-bg-end) 100%);
     box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-:deep(.ant-layout-sider .logo) {
+.logo {
     height: 64px;
-    padding: 16px;
-    background: linear-gradient(135deg, rgba(187, 147, 86, 0.2) 0%, rgba(187, 147, 86, 0.1) 100%);
-    margin-bottom: 24px;
-    margin-left: 12px;
-    margin-right: 12px;
-    border-radius: 12px;
+    margin: 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--primary-gold-dim);
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid rgba(187, 147, 86, 0.3);
-    transition: all 0.3s ease;
+    overflow: hidden;
+    white-space: nowrap;
+    transition: all 0.3s;
 }
 
-:deep(.ant-layout-sider .logo:hover) {
-    background: linear-gradient(135deg, rgba(187, 147, 86, 0.3) 0%, rgba(187, 147, 86, 0.2) 100%);
-    border-color: rgba(187, 147, 86, 0.5);
-    transform: translateY(-2px);
-}
-
-:deep(.ant-layout-sider .logo h2) {
+.logo h2 {
     color: #fff;
     margin: 0;
     font-size: 18px;
     font-weight: 700;
-    letter-spacing: 0.5px;
+    color: var(--primary-gold);
 }
 
 :deep(.ant-menu) {
     background: transparent;
-    border: none;
-    padding: 8px 0;
+    border-right: none;
 }
 
 :deep(.ant-menu-item) {
-    margin: 8px 12px !important;
-    border-radius: 8px !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    height: 44px !important;
-    line-height: 44px !important;
-    padding-left: 12px !important;
+    margin: 8px 12px;
+    width: auto;
+    border-radius: 8px;
+    color: var(--text-white);
 }
 
 :deep(.ant-menu-item:hover) {
-    background: rgba(187, 147, 86, 0.15) !important;
-    transform: translateX(6px);
+    color: #fff;
+    background: var(--primary-gold-dim);
 }
 
 :deep(.ant-menu-item-selected) {
-    background: linear-gradient(90deg, rgba(187, 147, 86, 0.3) 0%, rgba(187, 147, 86, 0.1) 100%) !important;
-    border-left: 3px solid #BB9356 !important;
-    padding-left: 9px !important;
+    background: linear-gradient(90deg, rgba(187, 147, 86, 0.3) 0%, rgba(187, 147, 86, 0.1) 100%);
+    color: var(--primary-gold);
+    border-left: 3px solid var(--primary-gold);
 }
 
-:deep(.ant-menu-item-selected:hover) {
-    background: linear-gradient(90deg, rgba(187, 147, 86, 0.4) 0%, rgba(187, 147, 86, 0.2) 100%) !important;
-}
-
-:deep(.ant-menu-item a) {
-    color: rgba(255, 255, 255, 0.8) !important;
-    font-weight: 500 !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 12px !important;
-    transition: all 0.3s ease !important;
-}
-
-:deep(.ant-menu-item-selected a) {
-    color: #BB9356 !important;
-    font-weight: 600 !important;
-}
-
-:deep(.ant-menu-item a:hover) {
-    color: #fff !important;
-}
-
+/* Ensure icons inherit color correctly */
 :deep(.ant-menu-item .anticon) {
-    font-size: 16px !important;
-    transition: all 0.3s ease !important;
-}
-
-:deep(.ant-menu-item:hover .anticon) {
-    transform: scale(1.1);
+    font-size: 16px;
 }
 
 :deep(.ant-menu-item-selected .anticon) {
-    color: #BB9356 !important;
+    color: var(--primary-gold);
 }
 
 :deep(.ant-divider) {
-    background-color: rgba(187, 147, 86, 0.2) !important;
-    margin: 16px 12px !important;
+    background-color: rgba(255, 255, 255, 0.1);
+    margin: 16px 24px;
 }
 
 .dashboard-header {
-    background: #fff !important;
-    padding: 0 24px !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
-    border-bottom: 1px solid #f0f0f0 !important;
+    background: #fff;
+    padding: 0 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    z-index: 10;
 }
 
 .header-content {
@@ -220,45 +225,56 @@ const handleLogout = () => {
 }
 
 .menu-toggle-btn {
-    font-size: 16px !important;
-    transition: all 0.3s ease !important;
+    font-size: 18px;
+    width: 48px;
+    height: 48px;
 }
 
 .menu-toggle-btn:hover {
-    color: #BB9356 !important;
-    transform: scale(1.1);
+    color: var(--primary-gold);
+    background: transparent;
 }
 
 .user-section {
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 0 12px;
+    gap: 12px;
+    cursor: pointer;
+    padding: 4px 12px;
+    border-radius: 20px;
+    transition: background 0.3s;
+}
+
+.user-section:hover {
+    background: rgba(0,0,0,0.025);
 }
 
 .user-name {
-    font-size: 14px;
     font-weight: 500;
     color: #333;
 }
 
 .user-avatar {
-    width: 40px !important;
-    height: 40px !important;
-    border: 2px solid #BB9356 !important;
-    transition: all 0.3s ease !important;
-}
-
-.user-avatar:hover {
-    box-shadow: 0 2px 8px rgba(187, 147, 86, 0.3) !important;
-    transform: scale(1.05);
+    border: 2px solid var(--primary-gold);
 }
 
 .dashboard-content {
-    margin: 24px 16px !important;
-    background: #fff !important;
-    padding: 24px !important;
-    border-radius: 12px !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+    margin: 24px;
+    background: #fff;
+    padding: 24px;
+    border-radius: 12px;
+    min-height: 280px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Page Transition Animation */
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
 }
 </style>

@@ -95,3 +95,9 @@ export const tagAPI = {
         return apiClient.delete(`/tags/${id}`)
     },
 }
+
+export const statsAPI = {
+    getStats() {
+        return apiClient.get('/stats')
+    },
+}

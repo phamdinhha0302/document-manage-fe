@@ -34,7 +34,7 @@ watch(
 </script>
 
 <template>
-    <ConfigProvider :theme="{ token: { colorPrimary: '#BB9356' } }">
+    <ConfigProvider :theme="{ token: { colorPrimary: '#48cae4' } }">
         <Transition 
             name="app-fade"
             enter-active-class="transition-opacity duration-300 ease-in-out"
