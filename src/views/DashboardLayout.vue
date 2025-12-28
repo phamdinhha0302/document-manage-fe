@@ -4,7 +4,7 @@
             <LayoutSider v-model:collapsed="collapsed" :trigger="null" collapsible width="250">
                 <div class="logo">
                     <h2 v-if="!collapsed">Document Manager</h2>
-                    <h2 v-else>T</h2>
+                    <h2 v-else>D</h2>
                 </div>
 
                 <Menu 

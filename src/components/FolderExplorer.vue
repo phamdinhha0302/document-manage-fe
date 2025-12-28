@@ -16,7 +16,7 @@
     <Breadcrumb style="margin-bottom: 16px">
       <BreadcrumbItem>
         <a href="javascript:;" @click="navigateToRoot">
-          <HomeOutlined /> My Drive
+          <HomeOutlined />
         </a>
       </BreadcrumbItem>
       <BreadcrumbItem v-for="item in breadcrumb" :key="item._id">
