@@ -3,58 +3,53 @@
         <Layout style="min-height: 100vh">
             <LayoutSider v-model:collapsed="collapsed" :trigger="null" collapsible width="250">
                 <div class="logo">
-                    <h2 v-if="!collapsed">Document Manager</h2>
-                    <h2 v-else>D</h2>
+                    <h2 v-if="!collapsed">Quản lý Tài liệu</h2>
+                    <h2 v-else>Q</h2>
                 </div>
 
-                <Menu 
-                    v-model:selectedKeys="selectedKeys" 
-                    mode="inline" 
-                    theme="dark"
-                    @click="handleMenuClick"
-                >
+                <Menu v-model:selectedKeys="selectedKeys" mode="inline" theme="dark" @click="handleMenuClick">
                     <MenuItem key="/dashboard">
-                        <template #icon>
-                            <HomeOutlined />
-                        </template>
-                        <span>Dashboard</span>
+                    <template #icon>
+                        <HomeOutlined />
+                    </template>
+                    <span>Trang chủ</span>
                     </MenuItem>
 
                     <MenuItem key="/documents">
-                        <template #icon>
-                            <FileOutlined />
-                        </template>
-                        <span>My Documents</span>
+                    <template #icon>
+                        <FileOutlined />
+                    </template>
+                    <span>Tài liệu của tôi</span>
                     </MenuItem>
 
                     <MenuItem key="/upload">
-                        <template #icon>
-                            <UploadOutlined />
-                        </template>
-                        <span>Upload Document</span>
+                    <template #icon>
+                        <UploadOutlined />
+                    </template>
+                    <span>Tải lên tài liệu</span>
                     </MenuItem>
 
                     <MenuItem key="/search">
-                        <template #icon>
-                            <SearchOutlined />
-                        </template>
-                        <span>Search</span>
+                    <template #icon>
+                        <SearchOutlined />
+                    </template>
+                    <span>Tìm kiếm</span>
                     </MenuItem>
 
                     <Divider />
 
                     <MenuItem v-if="user?.role === 'admin'" key="/admin">
-                        <template #icon>
-                            <SettingOutlined />
-                        </template>
-                        <span>Admin</span>
+                    <template #icon>
+                        <SettingOutlined />
+                    </template>
+                    <span>Quản trị</span>
                     </MenuItem>
 
                     <MenuItem key="logout" @click="handleLogout">
-                        <template #icon>
-                            <LogoutOutlined />
-                        </template>
-                        <span>Logout</span>
+                    <template #icon>
+                        <LogoutOutlined />
+                    </template>
+                    <span>Đăng xuất</span>
                     </MenuItem>
                 </Menu>
             </LayoutSider>
@@ -62,18 +57,13 @@
             <Layout>
                 <LayoutHeader class="dashboard-header">
                     <div class="header-content">
-                        <Button 
-                            type="text" 
-                            :icon="h(collapsed ? MenuUnfoldOutlined : MenuFoldOutlined)" 
-                            @click="collapsed = !collapsed"
-                            class="menu-toggle-btn"
-                        />
+                        <Button type="text" :icon="h(collapsed ? MenuUnfoldOutlined : MenuFoldOutlined)"
+                            @click="collapsed = !collapsed" class="menu-toggle-btn" />
                         <div class="user-section">
                             <span class="user-name">{{ user?.fullName || 'User' }}</span>
-                            <Avatar 
+                            <Avatar
                                 :src="user?.email ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}` : undefined"
-                                class="user-avatar"
-                            >
+                                class="user-avatar">
                                 {{ user?.fullName?.charAt(0)?.toUpperCase() }}
                             </Avatar>
                         </div>
@@ -93,11 +83,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, h, watch, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '@/composables/useAuthComposable'
-import { message, Layout, LayoutSider, LayoutHeader, LayoutContent, Menu, MenuItem, Divider, Button, Avatar } from 'ant-design-vue'
-import { HomeOutlined, FileOutlined, UploadOutlined, SearchOutlined, SettingOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons-vue'
+import { FileOutlined, HomeOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, SearchOutlined, SettingOutlined, UploadOutlined } from '@ant-design/icons-vue'
+import { Avatar, Button, Divider, Layout, LayoutContent, LayoutHeader, LayoutSider, Menu, MenuItem, message } from 'ant-design-vue'
+import { h, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
 const route = useRoute()
@@ -125,10 +115,10 @@ watch(
 const handleLogout = async () => {
     try {
         await logout()
-        message.success('Logged out successfully')
+        message.success('Đã đăng xuất thành công')
         router.push('/login')
     } catch (error) {
-        message.error('Failed to logout')
+        message.error('Đăng xuất thất bại')
     }
 }
 </script>
@@ -141,7 +131,7 @@ const handleLogout = async () => {
     --sidebar-bg-start: #0f2438;
     --sidebar-bg-end: #1a3a52;
     --text-white: rgba(255, 255, 255, 0.85);
-    
+
     background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     min-height: 100vh;
 }
@@ -246,7 +236,7 @@ const handleLogout = async () => {
 }
 
 .user-section:hover {
-    background: rgba(0,0,0,0.025);
+    background: rgba(0, 0, 0, 0.025);
 }
 
 .user-name {

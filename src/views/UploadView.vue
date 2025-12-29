@@ -1,40 +1,21 @@
 <template>
     <div class="upload-page">
-        <Card title="Upload Document" :bordered="false" class="shadow-card">
-            <Form
-                ref="formRef"
-                :model="formState"
-                layout="vertical"
-                @finish="handleUpload"
-            >
-                <FormItem
-                    label="Document Title"
-                    name="title"
-                    :rules="[{ required: true, message: 'Please enter document title' }]"
-                >
-                    <Input v-model:value="formState.title" placeholder="Enter document title" />
+        <Card title="Tải lên tài liệu" :bordered="false" class="shadow-card">
+            <Form ref="formRef" :model="formState" layout="vertical" @finish="handleUpload">
+                <FormItem label="Tiêu đề tài liệu" name="title"
+                    :rules="[{ required: true, message: 'Vui lòng nhập tiêu đề tài liệu' }]">
+                    <Input v-model:value="formState.title" placeholder="Nhập tiêu đề tài liệu" />
                 </FormItem>
 
-                <FormItem label="Description" name="description">
-                    <Input.TextArea 
-                        v-model:value="formState.description" 
-                        placeholder="Enter document description" 
-                        :rows="4" 
-                    />
+                <FormItem label="Mô tả" name="description">
+                    <Input.TextArea v-model:value="formState.description" placeholder="Nhập mô tả tài liệu" :rows="4" />
                 </FormItem>
 
-                <FormItem
-                    label="Category"
-                    name="categoryId"
-                    :rules="[{ required: true, message: 'Please select a category' }]"
-                >
+                <FormItem label="Danh mục" name="categoryId"
+                    :rules="[{ required: true, message: 'Vui lòng chọn danh mục' }]">
                     <div class="input-group">
-                        <Select
-                            v-model:value="formState.categoryId"
-                            placeholder="Select a category"
-                            :loading="isMetaLoading"
-                            class="flex-1"
-                        >
+                        <Select v-model:value="formState.categoryId" placeholder="Chọn danh mục"
+                            :loading="isMetaLoading" class="flex-1">
                             <SelectOption v-for="cat in categories" :key="cat._id" :value="cat._id">
                                 {{ cat.name }}
                             </SelectOption>
@@ -45,29 +26,20 @@
                     </div>
                 </FormItem>
 
-                <FormItem label="Folder (Optional)" name="folderId">
-                    <Select
-                        v-model:value="formState.folderId"
-                        placeholder="Select a folder"
-                        allow-clear
-                        :loading="isMetaLoading"
-                    >
-                        <SelectOption value="">Root Folder</SelectOption>
+                <FormItem label="Thư mục (Tùy chọn)" name="folderId">
+                    <Select v-model:value="formState.folderId" placeholder="Chọn thư mục" allow-clear
+                        :loading="isMetaLoading">
+                        <SelectOption value="">Thư mục gốc</SelectOption>
                         <SelectOption v-for="folder in folders" :key="folder._id" :value="folder._id">
                             {{ folder.name }}
                         </SelectOption>
                     </Select>
                 </FormItem>
 
-                <FormItem label="Tags" name="tagIds">
+                <FormItem label="Thẻ" name="tagIds">
                     <div class="input-group">
-                        <Select
-                            v-model:value="formState.tagIds"
-                            mode="multiple"
-                            placeholder="Select tags"
-                            :loading="isMetaLoading"
-                            class="flex-1"
-                        >
+                        <Select v-model:value="formState.tagIds" mode="multiple" placeholder="Chọn thẻ"
+                            :loading="isMetaLoading" class="flex-1">
                             <SelectOption v-for="tag in tags" :key="tag._id" :value="tag._id">
                                 {{ tag.name }}
                             </SelectOption>
@@ -78,43 +50,27 @@
                     </div>
                 </FormItem>
 
-                <FormItem
-                    label="File"
-                    name="file"
-                    :rules="[{ required: true, message: 'Please upload a file' }]"
-                >
-                    <Upload
-                        v-model:file-list="fileList"
-                        name="file"
-                        :max-count="1"
-                        accept=".pdf,.jpg,.jpeg,.png,.gif"
-                        :before-upload="handleBeforeUpload"
-                        @remove="handleRemoveFile"
-                    >
+                <FormItem label="Tệp" name="file" :rules="[{ required: true, message: 'Vui lòng tải lên tệp' }]">
+                    <Upload v-model:file-list="fileList" name="file" :max-count="1" accept=".pdf,.jpg,.jpeg,.png,.gif"
+                        :before-upload="handleBeforeUpload" @remove="handleRemoveFile">
                         <Button>
-                            <UploadOutlined /> Click to Upload
+                            <UploadOutlined /> Nhấp để tải lên
                         </Button>
                     </Upload>
                 </FormItem>
 
                 <FormItem class="submit-row">
                     <Button type="primary" html-type="submit" :loading="loading" size="large">
-                        <UploadOutlined /> Upload Document
+                        <UploadOutlined /> Tải lên tài liệu
                     </Button>
                 </FormItem>
             </Form>
 
             <Divider />
 
-            <h3>Uploaded Documents</h3>
-            <Table
-                :columns="columns"
-                :data-source="documents"
-                :loading="loading"
-                :pagination="{ pageSize: 10 }"
-                size="small"
-                row-key="_id"
-            >
+            <h3>Tài liệu đã tải lên</h3>
+            <Table :columns="columns" :data-source="documents" :loading="loading" :pagination="{ pageSize: 10 }"
+                size="small" row-key="_id">
                 <template #bodyCell="{ column, record }">
                     <template v-if="column.key === 'fileType'">
                         <Tag :color="getFileTypeColor(record.fileType)">{{ record.fileType }}</Tag>
@@ -125,37 +81,28 @@
                     </template>
                     <template v-else-if="column.key === 'actions'">
                         <Space>
-                            <a @click="viewDocument(record._id)">View</a>
+                            <a @click="viewDocument(record._id)">Xem</a>
                             <Divider type="vertical" />
-                            <a class="text-danger" @click="confirmDelete(record._id)">Delete</a>
+                            <a class="text-danger" @click="confirmDelete(record._id)">Xóa</a>
                         </Space>
                     </template>
                 </template>
             </Table>
         </Card>
 
-        <Modal
-            v-model:open="showCategoryModal"
-            title="Create New Category"
-            @ok="handleCreateCategory"
-            :confirm-loading="categoryLoading"
-        >
-            <FormItem label="Category Name" required>
+        <Modal v-model:open="showCategoryModal" title="Tạo danh mục mới" @ok="handleCreateCategory"
+            :confirm-loading="categoryLoading">
+            <FormItem label="Tên danh mục" required>
                 <Input v-model:value="newCategoryName" @keyup.enter="handleCreateCategory" />
             </FormItem>
         </Modal>
 
-        <Modal
-            v-model:open="showTagModal"
-            title="Create New Tag"
-            @ok="handleCreateTag"
-            :confirm-loading="tagLoading"
-        >
+        <Modal v-model:open="showTagModal" title="Tạo thẻ mới" @ok="handleCreateTag" :confirm-loading="tagLoading">
             <Form layout="vertical">
-                <FormItem label="Tag Name" required>
+                <FormItem label="Tên thẻ" required>
                     <Input v-model:value="newTagName" @keyup.enter="handleCreateTag" />
                 </FormItem>
-                <FormItem label="Color">
+                <FormItem label="Màu sắc">
                     <Input v-model:value="newTagColor" type="color" class="color-picker" />
                 </FormItem>
             </Form>
@@ -164,14 +111,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { message, Modal, Form, FormItem, Input, Select, SelectOption, Upload, Button, Divider, Table, Tag, Space } from 'ant-design-vue'
-import { UploadOutlined, PlusOutlined } from '@ant-design/icons-vue'
+import { PlusOutlined, UploadOutlined } from '@ant-design/icons-vue'
 import type { UploadProps } from 'ant-design-vue'
+import { Button, Divider, Form, FormItem, Input, message, Modal, Select, SelectOption, Space, Table, Tag, Upload } from 'ant-design-vue'
+import { onMounted, reactive, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 // Composables
-import { useDocuments, useCategories, useTags } from '@/composables/useDocumentComposable'
+import { useCategories, useDocuments, useTags } from '@/composables/useDocumentComposable'
 import { useFolders } from '@/composables/useFolderComposable'
 
 // --- Interfaces ---
@@ -219,11 +166,11 @@ const tagLoading = ref(false)
 
 // --- Table Configuration ---
 const columns = [
-    { title: 'Title', dataIndex: 'title', key: 'title', width: 250 },
-    { title: 'Type', dataIndex: 'fileType', key: 'fileType', width: 100 },
-    { title: 'AI Class', dataIndex: 'aiClassification', key: 'aiClassification', width: 150 },
-    { title: 'Views', dataIndex: 'views', key: 'views', width: 80, align: 'center' },
-    { title: 'Actions', key: 'actions', width: 150, align: 'right' },
+    { title: 'Tiêu đề', dataIndex: 'title', key: 'title', width: 250 },
+    { title: 'Loại', dataIndex: 'fileType', key: 'fileType', width: 100 },
+    { title: 'Phân loại AI', dataIndex: 'aiClassification', key: 'aiClassification', width: 150 },
+    { title: 'Lượt xem', dataIndex: 'views', key: 'views', width: 80, align: 'center' },
+    { title: 'Thao tác', key: 'actions', width: 150, align: 'right' },
 ]
 
 // --- Handlers ---
@@ -247,26 +194,26 @@ const handleRemoveFile = () => {
 }
 
 const handleUpload = async () => {
-    if (!formState.file) return message.error('Please select a file')
+    if (!formState.file) return message.error('Vui lòng chọn tệp')
 
     try {
         const formData = new FormData()
         formData.append('title', formState.title)
         formData.append('description', formState.description || '')
         formData.append('categoryId', formState.categoryId!) // rules ensure this is present
-        
+
         if (formState.folderId) formData.append('folderId', formState.folderId)
-        
+
         formState.tagIds.forEach(id => formData.append('tagIds', id))
         formData.append('file', formState.file)
 
         await apiUpload(formData)
-        
-        message.success('Document uploaded successfully!')
+
+        message.success('Tài liệu đã được tải lên thành công!')
         resetForm()
         await fetchDocuments()
     } catch (err: any) {
-        message.error(err.message || 'Upload failed')
+        message.error(err.message || 'Tải lên thất bại')
     }
 }
 
@@ -282,27 +229,27 @@ const resetForm = () => {
 
 // Quick Add Handlers
 const handleCreateCategory = async () => {
-    if (!newCategoryName.value.trim()) return message.warning('Name is required')
-    
+    if (!newCategoryName.value.trim()) return message.warning('Tên là bắt buộc')
+
     categoryLoading.value = true
     try {
         const newCat = await createCategory({ name: newCategoryName.value })
         formState.categoryId = newCat._id
         showCategoryModal.value = false
         newCategoryName.value = ''
-        message.success('Category created')
+        message.success('Danh mục đã được tạo')
         // Refresh categories list implicitly handled by composable reactive state usually, 
         // but if not, call fetchCategories() here.
     } catch (err: any) {
-        message.error(err.message || 'Failed')
+        message.error(err.message || 'Thất bại')
     } finally {
         categoryLoading.value = false
     }
 }
 
 const handleCreateTag = async () => {
-    if (!newTagName.value.trim()) return message.warning('Name is required')
-    
+    if (!newTagName.value.trim()) return message.warning('Tên là bắt buộc')
+
     tagLoading.value = true
     try {
         const newTag = await createTag({ name: newTagName.value, color: newTagColor.value })
@@ -310,9 +257,9 @@ const handleCreateTag = async () => {
         showTagModal.value = false
         newTagName.value = ''
         newTagColor.value = '#1890ff'
-        message.success('Tag created')
+        message.success('Thẻ đã được tạo')
     } catch (err: any) {
-        message.error(err.message || 'Failed')
+        message.error(err.message || 'Thất bại')
     } finally {
         tagLoading.value = false
     }
@@ -323,16 +270,16 @@ const viewDocument = (id: string) => router.push(`/documents/${id}`)
 
 const confirmDelete = (id: string) => {
     Modal.confirm({
-        title: 'Delete Document',
-        content: 'This action cannot be undone. Continue?',
-        okText: 'Delete',
+        title: 'Xóa tài liệu',
+        content: 'Hành động này không thể hoàn tác. Tiếp tục?',
+        okText: 'Xóa',
         okType: 'danger',
         onOk: async () => {
             try {
                 await deleteDocument(id)
-                message.success('Deleted')
+                message.success('Đã xóa')
                 await fetchDocuments()
-            } catch (err) { message.error('Delete failed') }
+            } catch (err) { message.error('Xóa thất bại') }
         },
     })
 }
@@ -357,7 +304,7 @@ onMounted(async () => {
             fetchTags(),
             fetchRootFolders()
         ])
-        
+
         const qFolderId = route.query.folderId as string
         if (qFolderId) formState.folderId = qFolderId
     } catch (err) {

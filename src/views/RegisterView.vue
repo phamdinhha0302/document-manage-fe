@@ -3,79 +3,53 @@
         <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
             <div class="w-full max-w-md">
                 <div class="bg-white rounded-lg shadow-xl p-8">
-                    <h1 class="text-3xl font-bold text-center text-gray-800 mb-2">Document Manager</h1>
-                    <p class="text-center text-gray-500 mb-8">Create your account</p>
+                    <h1 class="text-3xl font-bold text-center text-gray-800 mb-2">Quản lý Tài liệu</h1>
+                    <p class="text-center text-gray-500 mb-8">Tạo tài khoản của bạn</p>
 
-                    <Form
-                        :model="formData"
-                        layout="vertical"
-                        @finish="handleRegister"
-                        :loading="loading"
-                    >
-                        <FormItem
-                            label="Full Name"
-                            name="fullName"
-                            :rules="[{ required: true, message: 'Please enter full name' }]"
-                        >
-                            <Input v-model:value="formData.fullName" placeholder="Your Name" />
+                    <Form :model="formData" layout="vertical" @finish="handleRegister" :loading="loading">
+                        <FormItem label="Họ tên" name="fullName"
+                            :rules="[{ required: true, message: 'Vui lòng nhập họ tên' }]">
+                            <Input v-model:value="formData.fullName" placeholder="Tên của bạn" />
                         </FormItem>
 
-                        <FormItem
-                            label="Email"
-                            name="email"
-                            :rules="[
-                                { required: true, message: 'Please enter email' },
-                                { type: 'email', message: 'Invalid email' },
-                            ]"
-                        >
-                            <Input v-model:value="formData.email" placeholder="your@email.com" />
+                        <FormItem label="Email" name="email" :rules="[
+                            { required: true, message: 'Vui lòng nhập email' },
+                            { type: 'email', message: 'Email không hợp lệ' },
+                        ]">
+                            <Input v-model:value="formData.email" placeholder="email@example.com" />
                         </FormItem>
 
-                        <FormItem
-                            label="Password"
-                            name="password"
-                            :rules="[
-                                { required: true, message: 'Please enter password' },
-                                { min: 6, message: 'Password must be at least 6 characters' },
-                            ]"
-                        >
-                            <InputPassword v-model:value="formData.password" placeholder="Password" />
+                        <FormItem label="Mật khẩu" name="password" :rules="[
+                            { required: true, message: 'Vui lòng nhập mật khẩu' },
+                            { min: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự' },
+                        ]">
+                            <InputPassword v-model:value="formData.password" placeholder="Mật khẩu" />
                         </FormItem>
 
-                        <FormItem
-                            label="Confirm Password"
-                            name="confirmPassword"
-                            :rules="[
-                                { required: true, message: 'Please confirm password' },
-                                validatePasswordMatch(),
-                            ]"
-                        >
-                            <InputPassword v-model:value="formData.confirmPassword" placeholder="Confirm Password" />
+                        <FormItem label="Xác nhận mật khẩu" name="confirmPassword" :rules="[
+                            { required: true, message: 'Vui lòng xác nhận mật khẩu' },
+                            validatePasswordMatch(),
+                        ]">
+                            <InputPassword v-model:value="formData.confirmPassword" placeholder="Xác nhận mật khẩu" />
                         </FormItem>
 
                         <FormItem>
                             <Button type="primary" html-type="submit" block :loading="loading">
-                                Sign Up
+                                Đăng ký
                             </Button>
                         </FormItem>
                     </Form>
 
                     <div class="text-center">
                         <p class="text-gray-600 text-sm">
-                            Already have an account?
+                            Đã có tài khoản?
                             <router-link to="/login" class="text-indigo-600 hover:text-indigo-700 font-semibold">
-                                Sign in
+                                Đăng nhập
                             </router-link>
                         </p>
                     </div>
 
-                    <a-alert
-                        v-if="error"
-                        type="error"
-                        :message="error"
-                        show-icon
-                        class="mt-4"
-                    />
+                    <a-alert v-if="error" type="error" :message="error" show-icon class="mt-4" />
                 </div>
             </div>
         </div>
@@ -83,10 +57,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuthComposable'
-import { message, Form, FormItem, Input, InputPassword, Button, Alert } from 'ant-design-vue'
+import { Button, Form, FormItem, Input, InputPassword, message } from 'ant-design-vue'
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const { register } = useAuth()
@@ -107,7 +81,7 @@ const validatePasswordMatch = () => {
             if (!value || value === formData.value.password) {
                 return Promise.resolve()
             }
-            return Promise.reject(new Error('Passwords do not match'))
+            return Promise.reject(new Error('Mật khẩu không khớp'))
         },
     }
 }
@@ -117,10 +91,10 @@ const handleRegister = async () => {
     error.value = ''
     try {
         await register(formData.value.email, formData.value.password, formData.value.fullName)
-        message.success('Registration successful! Please log in.')
+        message.success('Đăng ký thành công! Vui lòng đăng nhập.')
         router.push('/login')
     } catch (err: any) {
-        error.value = err?.response?.data?.message || 'Registration failed'
+        error.value = err?.response?.data?.message || 'Đăng ký thất bại'
         message.error(error.value)
     } finally {
         loading.value = false

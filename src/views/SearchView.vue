@@ -3,27 +3,22 @@
         <Card class="search-card">
             <template #title>
                 <div class="card-title">
-                    <span>🔍 Search Documents</span>
+                    <span>🔍 Tìm kiếm tài liệu</span>
                 </div>
             </template>
 
             <!-- Search Bar -->
             <div style="margin-bottom: 32px">
-                <InputSearch
-                    v-model:value="searchQuery"
-                    placeholder="Search by title, description, or content..."
-                    enter-button
-                    size="large"
-                    @search="handleSearch"
-                    style="border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08)"
-                />
+                <InputSearch v-model:value="searchQuery" placeholder="Tìm kiếm theo tiêu đề, mô tả hoặc nội dung..."
+                    enter-button size="large" @search="handleSearch"
+                    style="border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08)" />
             </div>
 
             <!-- Filters Section -->
             <div class="filters-section">
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px">
-                    <!-- <span style="font-weight: 600; font-size: 14px">📋 Filters</span> -->
-                    <Tag v-if="hasActiveFilters" color="blue">{{ activeFilterCount }} active</Tag>
+                    <!-- <span style="font-weight: 600; font-size: 14px">📋 Bộ lọc</span> -->
+                    <Tag v-if="hasActiveFilters" color="blue">{{ activeFilterCount }} đang hoạt động</Tag>
                 </div>
 
                 <Row :gutter="[16, 16]" style="margin-bottom: 16px">
@@ -31,16 +26,11 @@
                     <Col :xs="24" :sm="12" :md="8">
                         <div class="filter-group">
                             <label style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px">
-                                Category
+                                Danh mục
                             </label>
-                            <Select
-                                v-model:value="selectedCategory"
-                                placeholder="All Categories"
-                                @change="handleFilterChange"
-                                allow-clear
-                                style="width: 100%"
-                            >
-                                <SelectOption value="">All Categories</SelectOption>
+                            <Select v-model:value="selectedCategory" placeholder="Tất cả danh mục"
+                                @change="handleFilterChange" allow-clear style="width: 100%">
+                                <SelectOption value="">Tất cả danh mục</SelectOption>
                                 <SelectOption v-for="cat in categories" :key="cat._id" :value="cat._id">
                                     {{ cat.name }}
                                 </SelectOption>
@@ -52,17 +42,10 @@
                     <Col :xs="24" :sm="12" :md="10">
                         <div class="filter-group">
                             <label style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px">
-                                Tags
+                                Thẻ
                             </label>
-                            <Select
-                                v-model:value="selectedTags"
-                                mode="multiple"
-                                placeholder="All Tags"
-                                @change="handleFilterChange"
-                                allow-clear
-                                style="width: 100%"
-                                :max-tag-count="2"
-                            >
+                            <Select v-model:value="selectedTags" mode="multiple" placeholder="Tất cả thẻ"
+                                @change="handleFilterChange" allow-clear style="width: 100%" :max-tag-count="2">
                                 <SelectOption v-for="tag in tags" :key="tag._id" :value="tag._id">
                                     {{ tag.name }}
                                 </SelectOption>
@@ -73,12 +56,9 @@
                     <!-- Reset Button -->
                     <Col :xs="24" :md="6">
                         <div class="filter-group" style="display: flex; align-items: flex-end; height: 100%">
-                            <Button 
-                                @click="handleReset" 
-                                style="width: 100%"
-                                :type="hasActiveFilters ? 'primary' : 'default'"
-                            >
-                                {{ hasActiveFilters ? 'Clear All' : 'No Filters' }}
+                            <Button @click="handleReset" style="width: 100%"
+                                :type="hasActiveFilters ? 'primary' : 'default'">
+                                {{ hasActiveFilters ? 'Xóa tất cả' : 'Không có bộ lọc' }}
                             </Button>
                         </div>
                     </Col>
@@ -87,11 +67,11 @@
                 <!-- Active Filters Display -->
                 <div v-if="hasActiveFilters" class="active-filters">
                     <span v-if="selectedCategory" class="filter-badge">
-                        Category: {{ getCategoryName(selectedCategory) }}
+                        Danh mục: {{ getCategoryName(selectedCategory) }}
                         <CloseOutlined @click="selectedCategory = ''" style="margin-left: 4px; cursor: pointer" />
                     </span>
                     <span v-for="tagId in selectedTags" :key="tagId" class="filter-badge">
-                        Tag: {{ getTagName(tagId) }}
+                        Thẻ: {{ getTagName(tagId) }}
                         <CloseOutlined @click="removeTag(tagId)" style="margin-left: 4px; cursor: pointer" />
                     </span>
                 </div>
@@ -105,19 +85,17 @@
                 <div v-if="searchResults.length > 0" class="results-section">
                     <div class="results-header">
                         <span style="font-weight: 600; font-size: 14px">
-                            Found <span style="color: #1890ff">{{ pagination.total }}</span> document(s)
+                            Tìm thấy <span style="color: #1890ff">{{ pagination.total }}</span> tài liệu
                         </span>
                     </div>
 
                     <List :data-source="searchResults" class="documents-list">
                         <template #renderItem="{ item }">
-                            <ListItem 
-                                @click="viewDocument(item._id)" 
-                                class="document-item"
-                            >
+                            <ListItem @click="viewDocument(item._id)" class="document-item">
                                 <ListItemMeta>
                                     <template #avatar>
-                                        <div style="display: flex; align-items: center; justify-content: center; width: 64px; height: 64px; background: #f0f0f0; border-radius: 4px; font-size: 32px">
+                                        <div
+                                            style="display: flex; align-items: center; justify-content: center; width: 64px; height: 64px; background: #f0f0f0; border-radius: 4px; font-size: 32px">
                                             <component :is="getFileIconComponent(item.fileType)" />
                                         </div>
                                     </template>
@@ -127,25 +105,23 @@
                                     <template #description>
                                         <div class="document-info">
                                             <p v-if="item.description" class="document-description">
-                                                {{ item.description.substring(0, 100) }}{{ item.description.length > 100 ? '...' : '' }}
+                                                {{ item.description.substring(0, 100) }}{{ item.description.length > 100
+                                                ? '...' : '' }}
                                             </p>
-                                            <div class="document-tags" style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px">
+                                            <div class="document-tags"
+                                                style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px">
                                                 <Tag color="blue" :bordered="false">{{ item.category?.name }}</Tag>
                                                 <Tag color="green" :bordered="false">{{ item.fileType }}</Tag>
-                                                <Tag 
-                                                    v-for="tag in item.tags" 
-                                                    :key="tag._id" 
-                                                    :color="tag.color"
-                                                    :bordered="false"
-                                                    style="font-size: 12px"
-                                                >
+                                                <Tag v-for="tag in item.tags" :key="tag._id" :color="tag.color"
+                                                    :bordered="false" style="font-size: 12px">
                                                     {{ tag.name }}
                                                 </Tag>
                                             </div>
-                                            <div class="document-stats" style="display: flex; gap: 16px; margin-top: 10px; font-size: 12px; color: #999">
-                                                <span>👁️ {{ item.views }} views</span>
-                                                <span>📥 {{ item.downloads || 0 }} downloads</span>
-                                                <span>By {{ item.uploadedBy?.fullName }}</span>
+                                            <div class="document-stats"
+                                                style="display: flex; gap: 16px; margin-top: 10px; font-size: 12px; color: #999">
+                                                <span>👁️ {{ item.views }} lượt xem</span>
+                                                <span>📥 {{ item.downloads || 0 }} tải xuống</span>
+                                                <span>Của {{ item.uploadedBy?.fullName }}</span>
                                             </div>
                                         </div>
                                     </template>
@@ -156,23 +132,15 @@
 
                     <!-- Pagination -->
                     <div style="text-align: center; margin-top: 32px">
-                        <Pagination
-                            v-model:current="currentPage"
-                            :total="pagination.total"
-                            :page-size="pagination.limit"
-                            @change="handlePageChange"
-                            show-size-changer
-                            :show-total="(total) => `Total ${total} documents`"
-                        />
+                        <Pagination v-model:current="currentPage" :total="pagination.total"
+                            :page-size="pagination.limit" @change="handlePageChange" show-size-changer
+                            :show-total="(total) => `Tổng cộng ${total} tài liệu`" />
                     </div>
                 </div>
 
                 <!-- No Results -->
                 <div v-else-if="searched" class="empty-state">
-                    <Empty
-                        description="No documents found"
-                        style="margin-top: 48px"
-                    >
+                    <Empty description="Không tìm thấy tài liệu nào" style="margin-top: 48px">
                         <template #notFoundImage>
                             <div style="font-size: 48px; margin-bottom: 16px">📄</div>
                         </template>
@@ -181,20 +149,17 @@
 
                 <!-- Initial State -->
                 <div v-else class="empty-state">
-                    <Empty
-                        description="Start searching or browsing documents"
-                        style="margin-top: 48px"
-                    >
+                    <Empty description="Bắt đầu tìm kiếm hoặc duyệt tài liệu" style="margin-top: 48px">
                         <template #notFoundImage>
                             <div style="font-size: 48px; margin-bottom: 16px">🔍</div>
                         </template>
                         <template #default>
                             <div style="margin-top: 16px; color: #666; font-size: 14px">
-                                <p>Try:</p>
+                                <p>Hãy thử:</p>
                                 <ul style="text-align: left; display: inline-block">
-                                    <li>Entering keywords in the search box</li>
-                                    <li>Selecting a category or tags</li>
-                                    <li>Leaving search empty and clicking search to browse all</li>
+                                    <li>Nhập từ khóa vào ô tìm kiếm</li>
+                                    <li>Chọn danh mục hoặc thẻ</li>
+                                    <li>Để trống tìm kiếm và nhấp tìm kiếm để duyệt tất cả</li>
                                 </ul>
                             </div>
                         </template>
@@ -206,11 +171,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useDocuments, useCategories, useTags } from '@/composables/useDocumentComposable'
+import { useCategories, useDocuments, useTags } from '@/composables/useDocumentComposable'
+import { CloseOutlined, FileImageOutlined, FileOutlined, FilePdfOutlined, FileTextOutlined } from '@ant-design/icons-vue'
+import { Button, Card, Col, Divider, Empty, InputSearch, List, ListItem, ListItemMeta, Pagination, Row, Select, SelectOption, Spin, Tag } from 'ant-design-vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { Card, InputSearch, Spin, List, ListItem, ListItemMeta, Tag, Pagination, Empty, Select, SelectOption, Button, Row, Col, Divider } from 'ant-design-vue'
-import { CloseOutlined, FilePdfOutlined, FileImageOutlined, FileTextOutlined, FileOutlined } from '@ant-design/icons-vue'
 
 const router = useRouter()
 const { documents, fetchDocuments, isLoading: loading, pagination } = useDocuments()
@@ -235,7 +200,7 @@ const activeFilterCount = computed(() => {
 
 const getFileIconComponent = (fileType: string | undefined) => {
     const type = fileType?.toLowerCase() || 'file'
-    
+
     switch (type) {
         case 'pdf':
             return FilePdfOutlined
@@ -263,7 +228,7 @@ const removeTag = (tagId: string) => {
 
 const handleSearch = async (query: string) => {
     currentPage.value = 1
-    
+
     // If search is empty, show all documents
     if (!query.trim() && selectedCategory.value === '' && selectedTags.value.length === 0) {
         searched.value = false
@@ -285,7 +250,7 @@ const handleSearch = async (query: string) => {
 
 const handleFilterChange = async () => {
     currentPage.value = 1
-    
+
     // If any filter is selected, show results
     if (searchQuery.value.trim() || selectedCategory.value || selectedTags.value.length > 0) {
         searched.value = true
@@ -309,7 +274,7 @@ const handleReset = async () => {
     selectedTags.value = []
     currentPage.value = 1
     searched.value = true
-    
+
     try {
         await fetchDocuments({
             page: 1,

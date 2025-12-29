@@ -14,7 +14,7 @@
             </Col>
         </Row>
 
-        <div class="section-title">Quick Actions</div>
+        <div class="section-title">Thao tác nhanh</div>
         <Row :gutter="[24, 24]">
             <Col v-for="action in quickActions" :key="action.route" :xs="24" :sm="12" :lg="8">
                 <Card hoverable class="action-card" @click="$router.push(action.route)">
@@ -29,13 +29,9 @@
             </Col>
         </Row>
 
-        <div class="section-title">Recent Uploads</div>
+        <div class="section-title">Tải lên gần đây</div>
         <Card :bordered="false" class="list-card">
-            <List
-                item-layout="horizontal"
-                :data-source="recentDocuments"
-                :loading="loading"
-            >
+            <List item-layout="horizontal" :data-source="recentDocuments" :loading="loading">
                 <template #renderItem="{ item }">
                     <ListItem>
                         <ListItemMeta>
@@ -51,12 +47,14 @@
                                 <Space divider type="vertical">
                                     <Tag color="blue">{{ item.category?.name || 'Uncategorized' }}</Tag>
                                     <span>{{ formatDate(item.createdAt) }}</span>
-                                    <span><EyeOutlined /> {{ item.views }}</span>
+                                    <span>
+                                        <EyeOutlined /> {{ item.views }}
+                                    </span>
                                 </Space>
                             </template>
                         </ListItemMeta>
                         <template #actions>
-                            <Button type="link" @click="viewDocument(item._id)">View</Button>
+                            <Button type="link" @click="viewDocument(item._id)">Xem</Button>
                         </template>
                     </ListItem>
                 </template>
@@ -66,17 +64,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { Row, Col, Statistic, Card, Skeleton, List, ListItem, ListItemMeta, CardMeta as Meta, Button, Tag, Space } from 'ant-design-vue'
-import { 
-    FileOutlined, FolderOutlined, EyeOutlined, DownloadOutlined, 
-    UploadOutlined, SearchOutlined, FilePdfOutlined, 
-    FileImageOutlined, FileTextOutlined 
+import {
+    DownloadOutlined,
+    EyeOutlined,
+    FileImageOutlined,
+    FileOutlined,
+    FilePdfOutlined,
+    FileTextOutlined,
+    FolderOutlined,
+    SearchOutlined,
+    UploadOutlined
 } from '@ant-design/icons-vue'
+import { Button, Card, Col, List, ListItem, ListItemMeta, CardMeta as Meta, Row, Skeleton, Space, Statistic, Tag } from 'ant-design-vue'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 // Composables
-import { useDocuments, useCategories } from '@/composables/useDocumentComposable'
+import { useCategories, useDocuments } from '@/composables/useDocumentComposable'
 import { useStats } from '@/composables/useStatsComposable'
 
 // --- Interfaces ---
@@ -113,61 +117,61 @@ const totalDocsCount = ref(0)
 
 // 1. Stats Configuration
 const statCards = computed<IStatCard[]>(() => [
-    { 
-        key: 'docs', 
-        title: 'Total Documents', 
-        value: totalDocsCount.value, 
-        icon: FileOutlined, 
-        color: '#1890ff' 
+    {
+        key: 'docs',
+        title: 'Tổng số tài liệu',
+        value: totalDocsCount.value,
+        icon: FileOutlined,
+        color: '#1890ff'
     },
-    { 
-        key: 'cats', 
-        title: 'Categories', 
-        value: categories.value.length, 
-        icon: FolderOutlined, 
-        color: '#722ed1' 
+    {
+        key: 'cats',
+        title: 'Danh mục',
+        value: categories.value.length,
+        icon: FolderOutlined,
+        color: '#722ed1'
     },
-    { 
-        key: 'views', 
-        title: 'Total Views', 
-        value: totalViews.value, 
-        icon: EyeOutlined, 
-        color: '#52c41a' 
+    {
+        key: 'views',
+        title: 'Tổng lượt xem',
+        value: totalViews.value,
+        icon: EyeOutlined,
+        color: '#52c41a'
     },
-    { 
-        key: 'downloads', 
-        title: 'Downloads', 
-        value: totalDownloads.value, 
-        icon: DownloadOutlined, 
-        color: '#fa8c16' 
+    {
+        key: 'downloads',
+        title: 'Tải xuống',
+        value: totalDownloads.value,
+        icon: DownloadOutlined,
+        color: '#fa8c16'
     }
 ])
 
 // 2. Quick Actions Configuration
 const quickActions = [
-    { 
-        title: 'Upload New', 
-        description: 'Upload PDF or images', 
-        route: '/upload', 
-        icon: UploadOutlined, 
-        color: '#1890ff', 
-        bg: '#e6f7ff' 
+    {
+        title: 'Tải lên tài liệu',
+        description: 'Tải lên PDF hoặc hình ảnh',
+        route: '/upload',
+        icon: UploadOutlined,
+        color: '#1890ff',
+        bg: '#e6f7ff'
     },
-    { 
-        title: 'Search', 
-        description: 'Find documents', 
-        route: '/search', 
-        icon: SearchOutlined, 
-        color: '#13c2c2', 
-        bg: '#e6fffb' 
+    {
+        title: 'Tìm kiếm',
+        description: 'Tìm tài liệu',
+        route: '/search',
+        icon: SearchOutlined,
+        color: '#13c2c2',
+        bg: '#e6fffb'
     },
-    { 
-        title: 'My Documents', 
-        description: 'Manage files', 
-        route: '/documents', 
-        icon: FileOutlined, 
-        color: '#722ed1', 
-        bg: '#f9f0ff' 
+    {
+        title: 'Tài liệu của tôi',
+        description: 'Quản lý các tệp',
+        route: '/documents',
+        icon: FileOutlined,
+        color: '#722ed1',
+        bg: '#f9f0ff'
     }
 ]
 

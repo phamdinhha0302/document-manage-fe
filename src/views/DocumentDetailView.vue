@@ -2,7 +2,7 @@
     <div class="document-detail-page">
         <div class="header-actions">
             <Button @click="handleBack">
-                <ArrowLeftOutlined /> Back to Documents
+                <ArrowLeftOutlined /> Quay lại tài liệu
             </Button>
         </div>
 
@@ -17,7 +17,7 @@
                             <div class="doc-info">
                                 <h1 class="doc-title">{{ document?.title }}</h1>
                                 <p class="doc-desc">{{ document?.description }}</p>
-                                
+
                                 <Space class="meta-tags" wrap>
                                     <Tag :color="getCategoryColor(document?.category?.name)">
                                         {{ document?.category?.name || 'Uncategorized' }}
@@ -31,11 +31,11 @@
                                 <div class="action-buttons">
                                     <Space>
                                         <Button type="primary" @click="handleDownload">
-                                            <DownloadOutlined /> Download
+                                            <DownloadOutlined /> Tải xuống
                                         </Button>
                                         <template v-if="isOwner">
-                                            <Button @click="openEditModal">Edit</Button>
-                                            <Button danger @click="confirmDelete">Delete</Button>
+                                            <Button @click="openEditModal">Chỉnh sửa</Button>
+                                            <Button danger @click="confirmDelete">Xóa</Button>
                                         </template>
                                     </Space>
                                 </div>
@@ -45,14 +45,11 @@
                         <Divider />
 
                         <Tabs v-model:activeKey="activeTab">
-                            <TabPane key="preview" tab="Preview">
+                            <TabPane key="preview" tab="Xem trước">
                                 <div class="preview-container">
-                                    <iframe
-                                        v-if="isPdfFile"
-                                        :src="`${document?.fileUrl}#toolbar=0`"
-                                        class="pdf-frame"
-                                    />
-                                    
+                                    <iframe v-if="isPdfFile" :src="`${document?.fileUrl}#toolbar=0`"
+                                        class="pdf-frame" />
+
                                     <div v-else-if="isImageFile" class="image-wrapper">
                                         <Image :src="document?.fileUrl" :alt="document?.title" />
                                     </div>
@@ -63,28 +60,28 @@
                                         </Spin>
                                     </div>
 
-                                    <Empty v-else description="Preview not available">
+                                    <Empty v-else description="Xem trước không khả dụng">
                                         <Button type="primary" @click="handleDownload">
-                                            Download File
+                                            Tải xuống tệp
                                         </Button>
                                     </Empty>
                                 </div>
                             </TabPane>
 
-                            <TabPane v-if="isImageFile || isPdfFile" key="ocr" tab="OCR Content">
+                            <TabPane v-if="isImageFile || isPdfFile" key="ocr" tab="Nội dung OCR">
                                 <div class="text-content-area">
                                     <p v-if="document?.ocrContent">{{ document.ocrContent }}</p>
-                                    <Empty v-else description="No OCR content extracted yet" />
+                                    <Empty v-else description="Chưa trích xuất nội dung OCR" />
                                 </div>
                             </TabPane>
 
-                            <TabPane key="summary" tab="AI Summary">
+                            <TabPane key="summary" tab="Tóm tắt AI">
                                 <div class="summary-section">
                                     <div v-if="!document?.summary && !summaryLoading" class="summary-empty">
                                         <Button type="primary" size="large" @click="generateSummary">
-                                            ✨ Generate AI Summary
+                                            ✨ Tạo tóm tắt bằng AI
                                         </Button>
-                                        <p class="hint-text">Uses Gemini AI to analyze document context</p>
+                                        <p class="hint-text">Sử dụng Gemini AI để phân tích ngữ cảnh tài liệu</p>
                                     </div>
 
                                     <Spin :spinning="summaryLoading">
@@ -92,7 +89,7 @@
                                             <p>{{ document.summary }}</p>
                                             <div class="summary-actions">
                                                 <Button type="link" size="small" @click="regenerateSummary">
-                                                    <ReloadOutlined /> Regenerate
+                                                    <ReloadOutlined /> Tạo lại
                                                 </Button>
                                             </div>
                                         </div>
@@ -100,45 +97,49 @@
                                 </div>
                             </TabPane>
 
-                            <TabPane key="details" tab="Details">
+                            <TabPane key="details" tab="Chi tiết">
                                 <Descriptions bordered column="{ xs: 1, sm: 2 }">
-                                    <DescriptionsItem label="File Type">{{ document?.fileType }}</DescriptionsItem>
-                                    <DescriptionsItem label="Size">{{ formatFileSize(document?.fileSize || 0) }}</DescriptionsItem>
-                                    <DescriptionsItem label="Uploaded By">{{ document?.uploadedBy?.fullName || 'Unknown' }}</DescriptionsItem>
-                                    <DescriptionsItem label="Date">{{ formatDate(document?.createdAt) }}</DescriptionsItem>
-                                    <DescriptionsItem label="Classification">
+                                    <DescriptionsItem label="Loại tệp">{{ document?.fileType }}</DescriptionsItem>
+                                    <DescriptionsItem label="Kích thước">{{ formatFileSize(document?.fileSize || 0) }}
+                                    </DescriptionsItem>
+                                    <DescriptionsItem label="Tải lên bởi">{{ document?.uploadedBy?.fullName || 'Không xác định' }}
+                                    </DescriptionsItem>
+                                    <DescriptionsItem label="Ngày">{{ formatDate(document?.createdAt) }}
+                                    </DescriptionsItem>
+                                    <DescriptionsItem label="Phân loại">
                                         <Tag color="purple">{{ document?.aiClassification || 'N/A' }}</Tag>
                                     </DescriptionsItem>
-                                    <DescriptionsItem label="AI Confidence">
-                                        <Progress 
-                                            :percent="Math.round((document?.aiConfidence || 0) * 100)" 
-                                            size="small" 
-                                            :status="getConfidenceStatus(document?.aiConfidence)"
-                                        />
+                                    <DescriptionsItem label="Độ tin cậy AI">
+                                        <Progress :percent="Math.round((document?.aiConfidence || 0) * 100)"
+                                            size="small" :status="getConfidenceStatus(document?.aiConfidence)" />
                                     </DescriptionsItem>
                                 </Descriptions>
                             </TabPane>
                         </Tabs>
 
-                        <Divider orientation="left">Notes</Divider>
+                        <Divider orientation="left">Ghi chú</Divider>
                         <div class="notes-section">
                             <p v-if="document?.notes">{{ document.notes }}</p>
-                            <span v-else class="text-muted">No notes added.</span>
+                            <span v-else class="text-muted">Chưa có ghi chú.</span>
                         </div>
                     </Card>
                 </Col>
 
                 <Col :xs="24" :lg="6">
-                    <Card title="Statistics" class="stats-card">
+                    <Card title="Thống kê" class="stats-card">
                         <Row :gutter="16">
                             <Col :span="12">
-                                <Statistic title="Views" :value="document?.views">
-                                    <template #prefix><EyeOutlined /></template>
+                                <Statistic title="Lượt xem" :value="document?.views">
+                                    <template #prefix>
+                                        <EyeOutlined />
+                                    </template>
                                 </Statistic>
                             </Col>
                             <Col :span="12">
-                                <Statistic title="Downloads" :value="document?.downloads">
-                                    <template #prefix><DownloadOutlined /></template>
+                                <Statistic title="Tải xuống" :value="document?.downloads">
+                                    <template #prefix>
+                                        <DownloadOutlined />
+                                    </template>
                                 </Statistic>
                             </Col>
                         </Row>
@@ -147,20 +148,15 @@
             </Row>
         </Spin>
 
-        <Modal 
-            v-model:open="showEditModal" 
-            title="Edit Document" 
-            @ok="handleUpdate"
-            :confirmLoading="isUpdating"
-        >
+        <Modal v-model:open="showEditModal" title="Chỉnh sửa tài liệu" @ok="handleUpdate" :confirmLoading="isUpdating">
             <Form layout="vertical">
-                <FormItem label="Title" required>
+                <FormItem label="Tiêu đề" required>
                     <Input v-model:value="editForm.title" />
                 </FormItem>
-                <FormItem label="Description">
+                <FormItem label="Mô tả">
                     <Input.TextArea v-model:value="editForm.description" :rows="3" />
                 </FormItem>
-                <FormItem label="Notes">
+                <FormItem label="Ghi chú">
                     <Input.TextArea v-model:value="editForm.notes" :rows="3" />
                 </FormItem>
             </Form>
@@ -169,18 +165,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, reactive } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { message, Modal, Spin, Button, Row, Col, Card, Space, Tag, Divider, Tabs, TabPane, Empty, Descriptions, DescriptionsItem, Progress, Statistic, Form, FormItem, Input, Image } from 'ant-design-vue'
-import { 
-    EyeOutlined, DownloadOutlined, FilePdfOutlined, FileImageOutlined, 
-    FileTextOutlined, FileOutlined, ArrowLeftOutlined, ReloadOutlined 
+import {
+    ArrowLeftOutlined,
+    DownloadOutlined,
+    EyeOutlined,
+    FileImageOutlined,
+    FileOutlined,
+    FilePdfOutlined,
+    FileTextOutlined,
+    ReloadOutlined
 } from '@ant-design/icons-vue'
+import { Button, Card, Col, Descriptions, DescriptionsItem, Divider, Empty, Form, FormItem, Image, Input, message, Modal, Progress, Row, Space, Spin, Statistic, TabPane, Tabs, Tag } from 'ant-design-vue'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 // Composables
-import { useDocuments } from '@/composables/useDocumentComposable'
-import { useAuth } from '@/composables/useAuthComposable'
 import { documentAPI } from '@/api/api.service'
+import { useAuth } from '@/composables/useAuthComposable'
+import { useDocuments } from '@/composables/useDocumentComposable'
 
 // --- Types ---
 interface ITag { _id: string; name: string; }
@@ -244,9 +246,9 @@ const handleDownload = async () => {
     if (!document.value) return
     try {
         await downloadDocument(document.value._id, document.value.fileName)
-        message.success('Download started')
+        message.success('Tải xuống bắt đầu')
         document.value.downloads++ // Optimistic update
-    } catch (err) { message.error('Download failed') }
+    } catch (err) { message.error('Tải xuống thất bại') }
 }
 
 const openEditModal = () => {
@@ -262,30 +264,30 @@ const handleUpdate = async () => {
     isUpdating.value = true
     try {
         await updateDocument(document.value._id, editForm)
-        message.success('Updated successfully')
-        
+        message.success('Cập nhật thành công')
+
         // Update local state to avoid full re-fetch
         document.value.title = editForm.title
         document.value.description = editForm.description
         document.value.notes = editForm.notes
-        
+
         showEditModal.value = false
-    } catch (err) { message.error('Update failed') }
+    } catch (err) { message.error('Cập nhật thất bại') }
     finally { isUpdating.value = false }
 }
 
 const confirmDelete = () => {
     Modal.confirm({
-        title: 'Delete Document?',
-        content: 'This action cannot be undone.',
+        title: 'Xóa tài liệu?',
+        content: 'Hành động này không thể hoàn tác.',
         okType: 'danger',
         onOk: async () => {
             if (!document.value) return
             try {
                 await deleteDocument(document.value._id)
-                message.success('Deleted')
+                message.success('Đã xóa')
                 router.replace('/documents')
-            } catch (err) { message.error('Delete failed') }
+            } catch (err) { message.error('Xóa thất bại') }
         }
     })
 }
@@ -298,35 +300,35 @@ const generateSummary = async () => {
     try {
         const res = await documentAPI.summarizeDocument(document.value._id)
         const summary = res.data?.data?.summary || res.data?.summary
-        
+
         if (summary) {
             document.value.summary = summary
-            message.success('Summary generated')
+            message.success('Tóm tắt đã được tạo')
         } else {
-            throw new Error('No summary data returned')
+            throw new Error('Không có dữ liệu tóm tắt được trả về')
         }
     } catch (err: any) {
-        message.error(err.message || 'Generation failed')
+        message.error(err.message || 'Tạo thất bại')
     } finally {
         summaryLoading.value = false
     }
 }
 
 const regenerateSummary = async () => {
-    if(document.value) document.value.summary = ''
+    if (document.value) document.value.summary = ''
     await generateSummary()
 }
 
 const loadTextFilePreview = async () => {
     if (!isTextFile.value || !document.value?.fileUrl) return
-    
+
     textPreviewLoading.value = true
     try {
         const res = await fetch(document.value.fileUrl)
-        if (!res.ok) throw new Error('Network response was not ok')
+        if (!res.ok) throw new Error('Phản hồi mạng không hợp lệ')
         filePreviewContent.value = await res.text()
     } catch (err) {
-        filePreviewContent.value = 'Failed to load text preview. Please download the file.'
+        filePreviewContent.value = 'Không thể tải xem trước văn bản. Vui lòng tải xuống tệp.'
     } finally {
         textPreviewLoading.value = false
     }
@@ -367,12 +369,12 @@ const formatDate = (date?: string) => date ? new Date(date).toLocaleDateString()
 onMounted(async () => {
     const id = route.params.id as string
     if (!id) return router.push('/documents')
-    
+
     try {
         document.value = await getDocument(id)
         if (isTextFile.value) await loadTextFilePreview()
     } catch (err) {
-        message.error('Document not found')
+        message.error('Tài liệu không tìm thấy')
         router.push('/documents')
     }
 })
@@ -389,7 +391,8 @@ onMounted(async () => {
     margin-bottom: 16px;
 }
 
-.main-card, .stats-card {
+.main-card,
+.stats-card {
     border-radius: 8px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
@@ -530,9 +533,9 @@ onMounted(async () => {
 }
 
 .action-buttons {
-        justify-content: center;
-        margin-top: 16px;
-    }
+    justify-content: center;
+    margin-top: 16px;
+}
 
 /* Responsive adjustments */
 @media (max-width: 576px) {
