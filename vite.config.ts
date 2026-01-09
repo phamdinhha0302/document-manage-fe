@@ -59,7 +59,7 @@ export default defineConfig({
         }
     },
     optimizeDeps: {
-        include: ['ant-design-vue', '@ant-design/icons-vue', 'leaflet']
+        include: ['ant-design-vue', '@ant-design/icons-vue', 'leaflet', 'pdfjs-dist/build/pdf.worker.min.js']
     },
     css: {
         preprocessorOptions: {

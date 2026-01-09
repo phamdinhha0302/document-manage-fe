@@ -9,6 +9,8 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     FolderExplorer: typeof import('./components/FolderExplorer.vue')['default']
+    OCRResultView: typeof import('./components/OCRResultView.vue')['default']
+    OCRViewer: typeof import('./components/OCRViewer.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
   }

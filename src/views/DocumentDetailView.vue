@@ -8,38 +8,58 @@
 
         <Spin :spinning="loading">
             <Row :gutter="[24, 24]">
-                <Col :xs="24" :lg="18">
+                <Col :xs="24" :lg="24">
                     <Card class="main-card">
                         <div class="doc-header">
-                            <div class="icon-wrapper">
-                                <component :is="getFileIconComponent(document?.fileType)" />
-                            </div>
-                            <div class="doc-info">
-                                <h1 class="doc-title">{{ document?.title }}</h1>
-                                <p class="doc-desc">{{ document?.description }}</p>
+                            <div class="flex gap-6">
+                                <div class="icon-wrapper">
+                                    <component :is="getFileIconComponent(document?.fileType)" />
+                                </div>
+                                <div class="doc-info">
+                                    <h1 class="doc-title">{{ document?.title }}</h1>
+                                    <p class="doc-desc">{{ document?.description }}</p>
 
-                                <Space class="meta-tags" wrap>
-                                    <Tag :color="getCategoryColor(document?.category?.name)">
-                                        {{ document?.category?.name || 'Uncategorized' }}
-                                    </Tag>
-                                    <Tag color="cyan">{{ document?.fileType?.toUpperCase() }}</Tag>
-                                    <Tag v-for="tag in document?.tags" :key="tag._id" color="blue">
-                                        #{{ tag.name }}
-                                    </Tag>
-                                </Space>
-
-                                <div class="action-buttons">
-                                    <Space>
-                                        <Button type="primary" @click="handleDownload">
-                                            <DownloadOutlined /> Tải xuống
-                                        </Button>
-                                        <template v-if="isOwner">
-                                            <Button @click="openEditModal">Chỉnh sửa</Button>
-                                            <Button danger @click="confirmDelete">Xóa</Button>
-                                        </template>
+                                    <Space class="meta-tags" wrap>
+                                        <Tag :color="getCategoryColor(document?.category?.name)">
+                                            {{ document?.category?.name || 'Uncategorized' }}
+                                        </Tag>
+                                        <Tag color="cyan">{{ document?.fileType?.toUpperCase() }}</Tag>
+                                        <Tag v-for="tag in document?.tags" :key="tag._id" color="blue">
+                                            #{{ tag.name }}
+                                        </Tag>
                                     </Space>
+
+                                    <div class="action-buttons">
+                                        <Space>
+                                            <Button type="primary" @click="handleDownload">
+                                                <DownloadOutlined /> Tải xuống
+                                            </Button>
+                                            <template v-if="isOwner">
+                                                <Button @click="openEditModal">Chỉnh sửa</Button>
+                                                <Button danger @click="confirmDelete">Xóa</Button>
+                                            </template>
+                                        </Space>
+                                    </div>
                                 </div>
                             </div>
+                            <Card title="Thống kê" class="stats-card w-[300px]">
+                                <Row :gutter="16">
+                                    <Col :span="12">
+                                        <Statistic title="Lượt xem" :value="document?.views">
+                                            <template #prefix>
+                                                <EyeOutlined />
+                                            </template>
+                                        </Statistic>
+                                    </Col>
+                                    <Col :span="12">
+                                        <Statistic title="Tải xuống" :value="document?.downloads">
+                                            <template #prefix>
+                                                <DownloadOutlined />
+                                            </template>
+                                        </Statistic>
+                                    </Col>
+                                </Row>
+                            </Card>
                         </div>
 
                         <Divider />
@@ -68,10 +88,27 @@
                                 </div>
                             </TabPane>
 
-                            <TabPane v-if="isImageFile || isPdfFile" key="ocr" tab="Nội dung OCR">
-                                <div class="text-content-area">
-                                    <p v-if="document?.ocrContent">{{ document.ocrContent }}</p>
-                                    <Empty v-else description="Chưa trích xuất nội dung OCR" />
+                            <TabPane v-if="isImageFile" key="ocr" tab="Nội dung OCR">
+                                <div class="ocr-content-area">
+                                    <div v-if="document?.ocrContent" class="ocr-result-wrapper">
+                                        <OCRResultView :image-url="document?.fileUrl"
+                                            :fields="document?.ocrFields || []" :document-type="document?.documentType"
+                                            :language="document?.ocrLanguage || 'vi'"
+                                            :confidence="(document?.ocrConfidence || 0) / 100"
+                                            :full-text="document?.ocrContent" />
+                                        <div class="ocr-actions">
+                                            <Button type="link" size="small" :loading="ocrLoading" @click="retryOCR">
+                                                <ReloadOutlined /> Trích xuất lại
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    <div v-else class="ocr-empty">
+                                        <Empty description="Chưa trích xuất nội dung OCR">
+                                            <Button type="primary" :loading="ocrLoading" @click="performOCR">
+                                                ✨ Trích xuất với OCR
+                                            </Button>
+                                        </Empty>
+                                    </div>
                                 </div>
                             </TabPane>
 
@@ -102,7 +139,7 @@
                                     <DescriptionsItem label="Loại tệp">{{ document?.fileType }}</DescriptionsItem>
                                     <DescriptionsItem label="Kích thước">{{ formatFileSize(document?.fileSize || 0) }}
                                     </DescriptionsItem>
-                                    <DescriptionsItem label="Tải lên bởi">{{ document?.uploadedBy?.fullName || 'Không xác định' }}
+                                    <DescriptionsItem label="Tải lên bởi">{{ document?.uploadedBy?.fullName }}
                                     </DescriptionsItem>
                                     <DescriptionsItem label="Ngày">{{ formatDate(document?.createdAt) }}
                                     </DescriptionsItem>
@@ -122,27 +159,6 @@
                             <p v-if="document?.notes">{{ document.notes }}</p>
                             <span v-else class="text-muted">Chưa có ghi chú.</span>
                         </div>
-                    </Card>
-                </Col>
-
-                <Col :xs="24" :lg="6">
-                    <Card title="Thống kê" class="stats-card">
-                        <Row :gutter="16">
-                            <Col :span="12">
-                                <Statistic title="Lượt xem" :value="document?.views">
-                                    <template #prefix>
-                                        <EyeOutlined />
-                                    </template>
-                                </Statistic>
-                            </Col>
-                            <Col :span="12">
-                                <Statistic title="Tải xuống" :value="document?.downloads">
-                                    <template #prefix>
-                                        <DownloadOutlined />
-                                    </template>
-                                </Statistic>
-                            </Col>
-                        </Row>
                     </Card>
                 </Col>
             </Row>
@@ -179,6 +195,9 @@ import { Button, Card, Col, Descriptions, DescriptionsItem, Divider, Empty, Form
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+// Components
+import OCRResultView from '@/components/OCRResultView.vue'
+
 // Composables
 import { documentAPI } from '@/api/api.service'
 import { useAuth } from '@/composables/useAuthComposable'
@@ -203,6 +222,10 @@ interface IDocument {
     category?: { name: string };
     tags?: ITag[];
     ocrContent?: string;
+    ocrLanguage?: string;
+    ocrConfidence?: number;
+    ocrFields?: any[];
+    documentType?: string;
     summary?: string;
     aiClassification?: string;
     aiConfidence?: number;
@@ -219,6 +242,7 @@ const activeTab = ref('preview')
 const showEditModal = ref(false)
 const isUpdating = ref(false)
 const summaryLoading = ref(false)
+const ocrLoading = ref(false)
 const textPreviewLoading = ref(false)
 const filePreviewContent = ref('')
 
@@ -231,7 +255,7 @@ const editForm = reactive({
 // --- Computed ---
 const isOwner = computed(() => user.value?._id === document.value?.uploadedBy._id)
 
-const isImageFile = computed(() => ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(document.value?.fileType?.toLowerCase() || ''))
+const isImageFile = computed(() => ['image'].includes(document.value?.fileType?.toLowerCase() || ''))
 const isTextFile = computed(() => ['txt', 'md', 'json', 'xml', 'csv', 'log'].includes(document.value?.fileType?.toLowerCase() || ''))
 const isPdfFile = computed(() => document.value?.fileType?.toLowerCase() === 'pdf')
 
@@ -243,6 +267,7 @@ const handleBack = () => {
 }
 
 const handleDownload = async () => {
+    console.log('aaaaa', document.value?.fileType?.toLowerCase())
     if (!document.value) return
     try {
         await downloadDocument(document.value._id, document.value.fileName)
@@ -317,6 +342,54 @@ const generateSummary = async () => {
 const regenerateSummary = async () => {
     if (document.value) document.value.summary = ''
     await generateSummary()
+}
+
+const performOCR = async () => {
+    if (!document.value) return
+    ocrLoading.value = true
+    try {
+        const res = await documentAPI.processOCR(document.value._id, 'vi')
+        const data = res.data?.data || res.data
+
+        if (data?.ocrContent) {
+            document.value.ocrContent = data.ocrContent
+            document.value.ocrLanguage = data.ocrLanguage
+            document.value.ocrConfidence = data.ocrConfidence
+            document.value.ocrFields = data.ocrFields || []
+            message.success('Trích xuất OCR thành công')
+        } else {
+            throw new Error('Không có dữ liệu OCR được trả về')
+        }
+    } catch (err: any) {
+        message.error(err.message || 'Trích xuất OCR thất bại')
+    } finally {
+        ocrLoading.value = false
+    }
+}
+
+const retryOCR = async () => {
+    if (document.value) document.value.ocrContent = ''
+    await performOCR()
+    
+    // Refresh document detail to get updated OCR fields
+    if (document.value) {
+        ocrLoading.value = true
+        try {
+            const res = await documentAPI.getDocument(document.value._id)
+            const updatedDoc = res.data?.data || res.data
+            
+            if (updatedDoc) {
+                document.value.ocrContent = updatedDoc.ocrContent || document.value.ocrContent
+                document.value.ocrFields = updatedDoc.ocrFields || document.value.ocrFields
+                document.value.ocrLanguage = updatedDoc.ocrLanguage || document.value.ocrLanguage
+                document.value.ocrConfidence = updatedDoc.ocrConfidence || document.value.ocrConfidence
+            }
+        } catch (err: any) {
+            console.error('Lỗi khi cập nhật dữ liệu OCR:', err)
+        } finally {
+            ocrLoading.value = false
+        }
+    }
 }
 
 const loadTextFilePreview = async () => {
@@ -399,7 +472,9 @@ onMounted(async () => {
 
 /* Header Section */
 .doc-header {
+    width: 100%;
     display: flex;
+    justify-content: space-between;
     gap: 24px;
 }
 
@@ -518,6 +593,28 @@ onMounted(async () => {
     border-radius: 4px;
     min-height: 200px;
     white-space: pre-wrap;
+}
+
+.ocr-content-wrapper {
+    background: #f6f8fa;
+    padding: 16px;
+    border-radius: 4px;
+}
+
+.ocr-info {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 12px;
+}
+
+.ocr-actions {
+    margin-top: 12px;
+    text-align: right;
+}
+
+.ocr-empty {
+    text-align: center;
+    padding: 40px;
 }
 
 /* Notes */

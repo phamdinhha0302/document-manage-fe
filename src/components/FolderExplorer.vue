@@ -77,7 +77,7 @@
                         <FolderOutlined />
                       </div>
                     </template>
-                    <Card.Meta :title="folder.name" :description="folder.description || 'Chưa đặt tên'"
+                    <Card.Meta :title="folder.name"
                       style="font-size: 13px" />
                     <div style="margin-top: 8px; font-size: 11px; color: #999">{{ formatDate(folder.createdAt) }}</div>
                   </Card>
@@ -125,14 +125,22 @@
                 <Card :hoverable="true" @click="viewDocument(doc._id)"
                   @contextmenu.prevent.stop="showDocumentContextMenu($event, doc)"
                   style="cursor: pointer; text-align: center; height: 100%" :body-style="{ padding: '12px' }"
-                  :data-doc-id="doc._id">
+                  :data-doc-id="doc._id"
+                  @mouseenter="() => triggerPreviewGeneration(doc)">
                   <template #cover>
                     <div
-                      style="padding: 15px 0; background: #f5f5f5; font-size: 32px; display: flex; align-items: center; justify-content: center; height: 80px">
-                      <component :is="getFileIconComponent(doc.fileType)" />
+                      style="padding: 15px 0; background: #f5f5f5; font-size: 32px; display: flex; align-items: center; justify-content: center; height: 140px; overflow: hidden; position: relative">
+                      <img v-if="documentPreviews[doc._id]" :src="documentPreviews[doc._id]" alt="preview"
+                        style="width: 100%; height: 100%; object-fit: cover" />
+                      <img v-else-if="doc.fileType?.toLowerCase().includes('image')" :src="doc.fileUrl" alt="preview"
+                        style="width: 100%; height: 100%; object-fit: cover" />
+                      <div v-else style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+                        <component :is="getFileIconComponent(doc.fileType)" style="font-size: 48px" />
+                        <span style="font-size: 12px; color: #666">{{ doc.fileType || 'Document' }}</span>
+                      </div>
                     </div>
                   </template>
-                  <Card.Meta :title="doc.title" :description="doc.description || 'Không có mô tả'"
+                  <Card.Meta :title="doc.title"
                     style="font-size: 13px" />
                   <div style="margin-top: 6px">
                     <Tag :color="getCategoryColor(doc.category?.name)" style="font-size: 11px">{{ doc.category?.name }}
@@ -294,6 +302,9 @@ import {
 import { Breadcrumb, BreadcrumbItem, Button, Card, Col, Dropdown, Form, FormItem, Input, Menu, MenuDivider, MenuItem, message, Modal, Row, Select, SelectOption, Skeleton, Spin, Tag, Upload } from 'ant-design-vue'
 import { nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import * as pdfjsLib from 'pdfjs-dist'
+import * as mammoth from 'mammoth'
+import html2canvas from 'html2canvas'
 
 // --- Interfaces for File System Access API ---
 interface FileSystemEntry {
@@ -368,6 +379,10 @@ const contextMenuVisible = ref(false)
 const contextMenuItems = ref<any[]>([])
 const contextMenuPosition = ref({ x: 0, y: 0 })
 
+// Preview Cache
+const documentPreviews = ref<Record<string, string>>({})
+const previewLoadingStatus = ref<Record<string, boolean>>({})
+
 // --- Utils ---
 const getFileIconComponent = (fileType: string) => {
   if (fileType?.toLowerCase().includes('image')) return FileImageOutlined
@@ -380,6 +395,107 @@ const getCategoryColor = (name: string) => {
   return colors[name] || 'default'
 }
 const formatDate = (d: string) => new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+
+// --- Preview Generation ---
+const generatePDFPreview = async (fileUrl: string, docId: string) => {
+  if (documentPreviews.value[docId] || previewLoadingStatus.value[docId]) return
+  
+  previewLoadingStatus.value[docId] = true
+  try {
+    // Try unpkg first, fallback to jsDelivr
+    const workerUrls = [
+      `https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js`,
+      `https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js`
+    ]
+    
+    let workerUrl = workerUrls[0]
+    try {
+      await fetch(workerUrl, { method: 'HEAD' })
+    } catch {
+      workerUrl = workerUrls[1]
+    }
+    
+    pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl
+    
+    console.log('Using worker from:', workerUrl)
+    console.log('Loading PDF preview from:', fileUrl)
+    
+    const pdf = await pdfjsLib.getDocument({
+      url: fileUrl,
+      withCredentials: true
+    }).promise
+    
+    const page = await pdf.getPage(1)
+    const scale = 1.5
+    const viewport = page.getViewport({ scale })
+    
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    if (!ctx) {
+      throw new Error('Cannot get 2D context')
+    }
+    
+    canvas.width = viewport.width
+    canvas.height = viewport.height
+    
+    const renderContext = {
+      canvasContext: ctx,
+      viewport: viewport
+    }
+    
+    await page.render(renderContext).promise
+    
+    const imageData = canvas.toDataURL('image/png')
+    documentPreviews.value[docId] = imageData
+    console.log('✅ PDF preview generated')
+  } catch (error) {
+    console.error('❌ PDF preview error:', error)
+  } finally {
+    previewLoadingStatus.value[docId] = false
+  }
+}
+
+const generateDocxPreview = async (fileUrl: string, docId: string) => {
+  if (documentPreviews.value[docId] || previewLoadingStatus.value[docId]) return
+  
+  previewLoadingStatus.value[docId] = true
+  try {
+    const response = await fetch(fileUrl)
+    const arrayBuffer = await response.arrayBuffer()
+    
+    // Use mammoth to convert DOCX to HTML
+    const result = await mammoth.convertToHtml({ arrayBuffer })
+    
+    // Create a temporary container to render HTML
+    const container = document.createElement('div')
+    container.innerHTML = result.value
+    container.style.cssText = 'width: 600px; padding: 20px; background: white; font-family: Arial, sans-serif; font-size: 12px; line-height: 1.5;'
+    document.body.appendChild(container)
+    
+    // Wait for images to load
+    await new Promise(r => setTimeout(r, 500))
+    
+    // Convert to image using html2canvas
+    const canvas = await html2canvas(container, { scale: 1, logging: false })
+    documentPreviews.value[docId] = canvas.toDataURL('image/png')
+    
+    document.body.removeChild(container)
+  } catch (e) {
+    console.error('DOCX preview error:', e)
+  } finally {
+    previewLoadingStatus.value[docId] = false
+  }
+}
+
+const triggerPreviewGeneration = (doc: any) => {
+  const fileType = doc.fileType?.toLowerCase() || ''
+  
+  if (fileType.includes('pdf')) {
+    generatePDFPreview(doc.fileUrl, doc._id)
+  } else if (fileType.includes('docx') || fileType.includes('word')) {
+    generateDocxPreview(doc.fileUrl, doc._id)
+  }
+}
 
 // --- File System Traversal ---
 const traverseFileTree = async (item: any, path = ''): Promise<ScannedItem[]> => {

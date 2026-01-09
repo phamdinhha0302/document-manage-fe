@@ -1,4 +1,5 @@
 import apiClient from './axios.client'
+import ocrClient from './ocr.client'
 
 export const authAPI = {
     register(data: { email: string; password: string; fullName: string }) {
@@ -35,6 +36,18 @@ export const documentAPI = {
                 'Content-Type': 'multipart/form-data',
             },
         })
+    },
+
+    uploadAndProcessOCR(formData: FormData) {
+        return apiClient.post('/documents/ocr/upload', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        })
+    },
+
+    processOCR(documentId: string, language: string = 'eng') {
+        return apiClient.post(`/documents/${documentId}/ocr`, { language })
     },
 
     updateDocument(id: string, data: any) {
@@ -99,5 +112,19 @@ export const tagAPI = {
 export const statsAPI = {
     getStats() {
         return apiClient.get('/stats')
+    },
+}
+
+export const ocrAPI = {
+    extractText(formData: FormData) {
+        return ocrClient.post('/ocr/extract', formData)
+    },
+
+    uploadAndSave(formData: FormData) {
+        return ocrClient.post('/ocr/upload-and-save', formData)
+    },
+
+    getSupportedLanguages() {
+        return ocrClient.get('/ocr/supported-languages')
     },
 }
