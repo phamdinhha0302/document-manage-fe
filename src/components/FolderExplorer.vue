@@ -200,29 +200,46 @@
     </Modal>
 
     <Modal v-model:open="showUploadModal" title="Tải lên tài liệu" width="700px" @ok="handleUploadDocument"
-      :confirm-loading="isUploading">
+      :confirm-loading="isUploading || isAILoading">
       <Form :model="uploadForm" layout="vertical">
-        <FormItem label="Tiêu đề tài liệu" required>
-          <Input v-model:value="uploadForm.title" :disabled="(uploadForm as any).isFolderUpload" />
+        <FormItem label="Tiêu đề tài liệu" name="title"
+          :rules="uploadForm.aiAutoName ? [] : [{ required: true, message: 'Vui lòng nhập tiêu đề tài liệu' }]">
+          <Input v-model:value="uploadForm.title" :disabled="(uploadForm as any).isFolderUpload || uploadForm.aiAutoName" />
         </FormItem>
-        <FormItem label="Mô tả">
+        <FormItem label="Mô tả" name="description">
           <Input v-model:value="uploadForm.description" type="textarea" :rows="3" />
         </FormItem>
-        <FormItem label="Danh mục" required>
+        <FormItem label="Danh mục" name="categoryId"
+          :rules="uploadForm.aiAutoClassify ? [] : [{ required: true, message: 'Vui lòng chọn danh mục' }]">
           <div style="display: flex; gap: 8px">
-            <Select v-model:value="uploadForm.categoryId" placeholder="Chọn danh mục" style="flex: 1">
+            <Select v-model:value="uploadForm.categoryId" placeholder="Chọn danh mục" style="flex: 1" :disabled="uploadForm.aiAutoClassify">
               <SelectOption v-for="cat in categories" :key="cat._id" :value="cat._id">{{ cat.name }}</SelectOption>
             </Select>
-            <Button @click="showCreateCategoryModal = true" type="dashed">+ Mới</Button>
+            <Button @click="showCreateCategoryModal = true" type="dashed" :disabled="uploadForm.aiAutoClassify">+ Mới</Button>
           </div>
         </FormItem>
-        <FormItem label="Thẻ">
+        <FormItem label="Thẻ" name="tagIds">
           <div style="display: flex; gap: 8px">
             <Select v-model:value="uploadForm.tagIds" mode="multiple" placeholder="Chọn thẻ" style="flex: 1">
               <SelectOption v-for="tag in tags" :key="tag._id" :value="tag._id">{{ tag.name }}</SelectOption>
             </Select>
             <Button @click="showCreateTagModal = true" type="dashed">+ Mới</Button>
           </div>
+        </FormItem>
+
+        <Divider style="margin: 16px 0" />
+        <h4 style="margin-bottom: 16px">Cài đặt AI</h4>
+
+        <FormItem>
+          <Checkbox v-model:checked="uploadForm.aiAutoName">
+            Tự động đặt tên file bằng AI
+          </Checkbox>
+        </FormItem>
+
+        <FormItem>
+          <Checkbox v-model:checked="uploadForm.aiAutoClassify">
+            Tự động phân loại danh mục bằng AI
+          </Checkbox>
         </FormItem>
 
         <div v-if="(uploadForm as any).isFolderUpload" class="folder-upload-info">
@@ -286,6 +303,7 @@
 <script setup lang="ts">
 import { categoryAPI, documentAPI, tagAPI } from '@/api/api.service'
 import axios from '@/api/axios.client'
+import { aiAPI } from '@/api/api.service'
 import { useDocuments } from '@/composables/useDocumentComposable'
 import { useDocumentWithFolder, useFolders } from '@/composables/useFolderComposable'
 import {
@@ -299,7 +317,7 @@ import {
   ReloadOutlined,
   UploadOutlined
 } from '@ant-design/icons-vue'
-import { Breadcrumb, BreadcrumbItem, Button, Card, Col, Dropdown, Form, FormItem, Input, Menu, MenuDivider, MenuItem, message, Modal, Row, Select, SelectOption, Skeleton, Spin, Tag, Upload } from 'ant-design-vue'
+import { Breadcrumb, BreadcrumbItem, Button, Card, Col, Checkbox, Dropdown, Form, FormItem, Input, Menu, MenuDivider, MenuItem, message, Modal, Row, Select, SelectOption, Skeleton, Spin, Tag, Upload } from 'ant-design-vue'
 import { nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import * as pdfjsLib from 'pdfjs-dist'
@@ -360,8 +378,9 @@ const editingFolder = ref({ _id: '', name: '', description: '' })
 
 const showUploadModal = ref(false)
 const isUploading = ref(false)
+const isAILoading = ref(false)
 const uploadFileList = ref<any[]>([])
-const uploadForm = ref({ title: '', description: '', categoryId: '', tagIds: [] })
+const uploadForm = ref({ title: '', description: '', categoryId: '', tagIds: [], aiAutoName: false, aiAutoClassify: false })
 
 const showCreateCategoryModal = ref(false)
 const newCategoryForm = ref({ name: '', description: '' })
@@ -540,6 +559,30 @@ const loadTags = async () => {
   } catch (e) { console.error(e) }
 }
 
+const loadAISettings = () => {
+  try {
+    const saved = localStorage.getItem('folderAISettings')
+    if (saved) {
+      const settings = JSON.parse(saved)
+      uploadForm.value.aiAutoName = settings.aiAutoName || false
+      uploadForm.value.aiAutoClassify = settings.aiAutoClassify || false
+    }
+  } catch (e) {
+    console.error('Failed to load AI settings', e)
+  }
+}
+
+const saveAISettings = () => {
+  try {
+    localStorage.setItem('folderAISettings', JSON.stringify({
+      aiAutoName: uploadForm.value.aiAutoName,
+      aiAutoClassify: uploadForm.value.aiAutoClassify
+    }))
+  } catch (e) {
+    console.error('Failed to save AI settings', e)
+  }
+}
+
 onMounted(async () => {
   const folderId = route.query.folderId as string
   if (folderId) {
@@ -689,10 +732,12 @@ const handleExplorerContextMenu = async (e: MouseEvent) => {
 
 // --- Action Implementations ---
 const uploadToCurrentFolder = async () => {
-  uploadForm.value = { title: '', description: '', categoryId: '', tagIds: [] }
+  uploadForm.value = { title: '', description: '', categoryId: '', tagIds: [], aiAutoName: false, aiAutoClassify: false }
     ; (uploadForm.value as any).isFolderUpload = false
   uploadFileList.value = []
   await loadCategories(); await loadTags();
+  // Load AI settings
+  loadAISettings()
   showUploadModal.value = true
 }
 const handleBeforeFileUpload = (file: File) => {
@@ -767,23 +812,79 @@ const handleCreateTag = async () => {
 
 // --- Upload Logic ---
 const handleUploadDocument = async () => {
-  if (!uploadForm.value.categoryId) return message.error('Category required')
+  // For single file uploads: validate required fields based on AI settings
+  if (!(uploadForm.value as any).isFolderUpload) {
+    if (!uploadForm.value.aiAutoName && !uploadForm.value.title) {
+      return message.error('Vui lòng nhập tiêu đề tài liệu')
+    }
+    if (!uploadForm.value.aiAutoClassify && !uploadForm.value.categoryId) {
+      return message.error('Vui lòng chọn danh mục')
+    }
+    if (!uploadFileList.value.length) return message.error('File required')
+  }
 
   if ((uploadForm.value as any).isFolderUpload) {
     await processFolderUpload(uploadForm.value.categoryId, uploadForm.value.tagIds)
     return
   }
 
-  if (!uploadForm.value.title) return message.error('Title required')
-  if (!uploadFileList.value.length) return message.error('File required')
-
   isUploading.value = true
   try {
+    let title = uploadForm.value.title
+    let categoryId = uploadForm.value.categoryId
+    const file = uploadFileList.value[0].originFileObj
+
+    // AI Auto Name
+    if (uploadForm.value.aiAutoName && file) {
+      isAILoading.value = true
+      message.loading({ content: 'Đang đặt tên file bằng AI...', key: 'aiAutoName' })
+      try {
+        const aiResponse = await aiAPI.classifyFileName(file)
+        if (aiResponse.data?.data?.fileName) {
+          title = aiResponse.data.data.fileName
+          message.success({ content: 'Tên file được đặt bởi AI', key: 'aiAutoName' })
+        }
+      } catch (err) {
+        console.error('AI naming failed:', err)
+        message.warning({ content: 'Không thể đặt tên bằng AI, sử dụng tên mặc định', key: 'aiAutoName' })
+      } finally {
+        isAILoading.value = false
+      }
+    }
+
+    // AI Auto Classify
+    if (uploadForm.value.aiAutoClassify && file) {
+      isAILoading.value = true
+      message.loading({ content: 'Đang phân loại danh mục bằng AI...', key: 'aiAutoClassify' })
+      try {
+        const aiResponse = await aiAPI.classifyCategory(file)
+        if (aiResponse.data?.data?.categoryId) {
+          categoryId = aiResponse.data.data.categoryId
+          const categoryName = aiResponse.data?.data?.categoryName
+          const isNewCategory = aiResponse.data?.data?.isNewCategory
+          
+          if (isNewCategory) {
+            message.success({ content: `Danh mục mới "${categoryName}" được tạo bởi AI`, key: 'aiAutoClassify' })
+            // Refetch categories to get the new one
+            await loadCategories()
+          } else {
+            message.success({ content: 'Danh mục được phân loại bởi AI', key: 'aiAutoClassify' })
+          }
+        }
+      } catch (err) {
+        console.error('AI classification failed:', err)
+        message.warning({ content: 'Không thể phân loại bằng AI, vui lòng chọn danh mục', key: 'aiAutoClassify' })
+        return
+      } finally {
+        isAILoading.value = false
+      }
+    }
+
     const fd = new FormData()
-    fd.append('file', uploadFileList.value[0].originFileObj)
-    fd.append('title', uploadForm.value.title)
+    fd.append('file', file)
+    fd.append('title', title)
     fd.append('description', uploadForm.value.description)
-    fd.append('categoryId', uploadForm.value.categoryId)
+    fd.append('categoryId', categoryId)
     uploadForm.value.tagIds.forEach(t => fd.append('tagIds', t))
     if (currentFolder.value?._id) fd.append('folderId', currentFolder.value._id)
 
@@ -819,11 +920,44 @@ const processFolderUpload = async (catId: string, tagIds: string[]) => {
         } catch (e) { }
       } else if (item.type === 'file' && item.file) {
         try {
+          let fileName = item.name
+          let categoryId = catId
+
+          // AI Auto Name for batch files
+          if (uploadForm.value.aiAutoName && item.file) {
+            try {
+              const aiResponse = await aiAPI.classifyFileName(item.file)
+              if (aiResponse.data?.data?.fileName) {
+                fileName = aiResponse.data.data.fileName
+              }
+            } catch (err) {
+              console.error('AI naming failed:', err)
+            }
+          }
+
+          // AI Auto Classify for batch files (if categoryId is empty)
+          if (uploadForm.value.aiAutoClassify && !categoryId && item.file) {
+            try {
+              const aiResponse = await aiAPI.classifyCategory(item.file)
+              if (aiResponse.data?.data?.categoryId) {
+                categoryId = aiResponse.data.data.categoryId
+              }
+            } catch (err) {
+              console.error('AI classification failed:', err)
+            }
+          }
+
+          // Skip file if no category available
+          if (!categoryId) {
+            console.warn(`Skipping file "${item.name}" - no category assigned`)
+            continue
+          }
+
           const fd = new FormData()
           fd.append('file', item.file)
-          fd.append('title', item.name)
+          fd.append('title', fileName)
           fd.append('description', uploadForm.value.description)
-          fd.append('categoryId', catId)
+          fd.append('categoryId', categoryId)
           if (pid) fd.append('folderId', pid)
           tagIds.forEach(t => fd.append('tagIds', t))
           await documentAPI.uploadDocument(fd)
@@ -900,6 +1034,21 @@ const handleDrop = async (e: DragEvent) => {
   } catch (e) { console.error(e) }
   finally { isUploading.value = false }
 }
+
+// Watchers - Clear values when AI auto modes are enabled in FolderExplorer upload & Save settings
+watch(() => uploadForm.value.aiAutoName, (newVal) => {
+  if (newVal) {
+    uploadForm.value.title = ''
+  }
+  saveAISettings()
+})
+
+watch(() => uploadForm.value.aiAutoClassify, (newVal) => {
+  if (newVal) {
+    uploadForm.value.categoryId = ''
+  }
+  saveAISettings()
+})
 </script>
 
 <style scoped>

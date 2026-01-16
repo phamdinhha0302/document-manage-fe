@@ -128,3 +128,27 @@ export const ocrAPI = {
         return ocrClient.get('/ocr/supported-languages')
     },
 }
+
+export const aiAPI = {
+    classifyFileName(file: File) {
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('fileType', file.type)
+        return apiClient.post('/ai/classify-filename', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        })
+    },
+
+    classifyCategory(file: File) {
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('fileType', file.type)
+        return apiClient.post('/ai/classify-category', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        })
+    },
+}

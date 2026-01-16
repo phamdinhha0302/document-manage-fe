@@ -3,8 +3,9 @@
         <Card title="Tải lên tài liệu" :bordered="false" class="shadow-card">
             <Form ref="formRef" :model="formState" layout="vertical" @finish="handleUpload">
                 <FormItem label="Tiêu đề tài liệu" name="title"
-                    :rules="[{ required: true, message: 'Vui lòng nhập tiêu đề tài liệu' }]">
-                    <Input v-model:value="formState.title" placeholder="Nhập tiêu đề tài liệu" />
+                    :rules="formState.aiAutoName ? [] : [{ required: true, message: 'Vui lòng nhập tiêu đề tài liệu' }]">
+                    <Input v-model:value="formState.title" placeholder="Nhập tiêu đề tài liệu" 
+                        :disabled="formState.aiAutoName" />
                 </FormItem>
 
                 <FormItem label="Mô tả" name="description">
@@ -12,15 +13,15 @@
                 </FormItem>
 
                 <FormItem label="Danh mục" name="categoryId"
-                    :rules="[{ required: true, message: 'Vui lòng chọn danh mục' }]">
+                    :rules="formState.aiAutoClassify ? [] : [{ required: true, message: 'Vui lòng chọn danh mục' }]">
                     <div class="input-group">
                         <Select v-model:value="formState.categoryId" placeholder="Chọn danh mục"
-                            :loading="isMetaLoading" class="flex-1">
+                            :loading="isMetaLoading" class="flex-1" :disabled="formState.aiAutoClassify">
                             <SelectOption v-for="cat in categories" :key="cat._id" :value="cat._id">
                                 {{ cat.name }}
                             </SelectOption>
                         </Select>
-                        <Button @click="showCategoryModal = true">
+                        <Button @click="showCategoryModal = true" :disabled="formState.aiAutoClassify">
                             <PlusOutlined />
                         </Button>
                     </div>
@@ -50,6 +51,21 @@
                     </div>
                 </FormItem>
 
+                <Divider style="margin: 16px 0" />
+                <h4 style="margin-bottom: 16px">Cài đặt AI</h4>
+
+                <FormItem name="aiAutoName">
+                    <Checkbox v-model:checked="formState.aiAutoName">
+                        Tự động đặt tên file bằng AI
+                    </Checkbox>
+                </FormItem>
+
+                <FormItem name="aiAutoClassify">
+                    <Checkbox v-model:checked="formState.aiAutoClassify">
+                        Tự động phân loại danh mục bằng AI
+                    </Checkbox>
+                </FormItem>
+
                 <FormItem label="Tệp" name="file" :rules="[{ required: true, message: 'Vui lòng tải lên tệp' }]">
                     <Upload v-model:file-list="fileList" name="file" :max-count="1" accept=".pdf,.jpg,.jpeg,.png,.gif"
                         :before-upload="handleBeforeUpload" @remove="handleRemoveFile">
@@ -60,7 +76,7 @@
                 </FormItem>
 
                 <FormItem class="submit-row">
-                    <Button type="primary" html-type="submit" :loading="loading" size="large">
+                    <Button type="primary" html-type="submit" :loading="loading || isAILoading" size="large">
                         <UploadOutlined /> Tải lên tài liệu
                     </Button>
                 </FormItem>
@@ -113,13 +129,14 @@
 <script setup lang="ts">
 import { PlusOutlined, UploadOutlined } from '@ant-design/icons-vue'
 import type { UploadProps } from 'ant-design-vue'
-import { Button, Divider, Form, FormItem, Input, message, Modal, Select, SelectOption, Space, Table, Tag, Upload } from 'ant-design-vue'
-import { onMounted, reactive, ref } from 'vue'
+import { Button, Checkbox, Divider, Form, FormItem, Input, message, Modal, Select, SelectOption, Space, Table, Tag, Upload } from 'ant-design-vue'
+import { onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 // Composables
 import { useCategories, useDocuments, useTags } from '@/composables/useDocumentComposable'
 import { useFolders } from '@/composables/useFolderComposable'
+import { aiAPI } from '@/api/api.service'
 
 // --- Interfaces ---
 interface IUploadForm {
@@ -129,6 +146,8 @@ interface IUploadForm {
     folderId: string | undefined;
     tagIds: string[];
     file: File | null;
+    aiAutoName: boolean;
+    aiAutoClassify: boolean;
 }
 
 const router = useRouter()
@@ -144,6 +163,7 @@ const { folders, fetchRootFolders } = useFolders()
 const formRef = ref()
 const isMetaLoading = ref(false)
 const fileList = ref<UploadProps['fileList']>([])
+const isAILoading = ref(false)
 
 const formState = reactive<IUploadForm>({
     title: '',
@@ -152,6 +172,8 @@ const formState = reactive<IUploadForm>({
     folderId: undefined,
     tagIds: [],
     file: null,
+    aiAutoName: false,
+    aiAutoClassify: false,
 })
 
 // Modals State
@@ -196,16 +218,73 @@ const handleRemoveFile = () => {
 const handleUpload = async () => {
     if (!formState.file) return message.error('Vui lòng chọn tệp')
 
+    // Validate required fields based on AI settings
+    if (!formState.aiAutoName && !formState.title) {
+        return message.error('Vui lòng nhập tiêu đề tài liệu')
+    }
+    if (!formState.aiAutoClassify && !formState.categoryId) {
+        return message.error('Vui lòng chọn danh mục')
+    }
+
     try {
+        let title = formState.title
+        let categoryId = formState.categoryId
+
+        // AI Auto Name
+        if (formState.aiAutoName && formState.file) {
+            isAILoading.value = true
+            message.loading({ content: 'Đang đặt tên file bằng AI...', key: 'aiAutoName' })
+            try {
+                const aiResponse = await aiAPI.classifyFileName(formState.file)
+                if (aiResponse.data?.data?.fileName) {
+                    title = aiResponse.data.data.fileName
+                    message.success({ content: 'Tên file được đặt bởi AI', key: 'aiAutoName' })
+                }
+            } catch (err) {
+                console.error('AI naming failed:', err)
+                message.warning({ content: 'Không thể đặt tên bằng AI, sử dụng tên mặc định', key: 'aiAutoName' })
+            } finally {
+                isAILoading.value = false
+            }
+        }
+
+        // AI Auto Classify
+        if (formState.aiAutoClassify && formState.file) {
+            isAILoading.value = true
+            message.loading({ content: 'Đang phân loại danh mục bằng AI...', key: 'aiAutoClassify' })
+            try {
+                const aiResponse = await aiAPI.classifyCategory(formState.file)
+                if (aiResponse.data?.data?.categoryId) {
+                    categoryId = aiResponse.data.data.categoryId
+                    const categoryName = aiResponse.data?.data?.categoryName
+                    const isNewCategory = aiResponse.data?.data?.isNewCategory
+                    
+                    if (isNewCategory) {
+                        message.success({ content: `Danh mục mới "${categoryName}" được tạo bởi AI`, key: 'aiAutoClassify' })
+                        // Refetch categories to get the new one
+                        await fetchCategories()
+                    } else {
+                        message.success({ content: 'Danh mục được phân loại bởi AI', key: 'aiAutoClassify' })
+                    }
+                }
+            } catch (err) {
+                console.error('AI classification failed:', err)
+                message.warning({ content: 'Không thể phân loại bằng AI, vui lòng chọn danh mục', key: 'aiAutoClassify' })
+                return
+            } finally {
+                isAILoading.value = false
+            }
+        }
+
         const formData = new FormData()
-        formData.append('title', formState.title)
+        formData.append('file', formState.file)
+        formData.append('title', title)
         formData.append('description', formState.description || '')
-        formData.append('categoryId', formState.categoryId!) // rules ensure this is present
+        formData.append('categoryId', categoryId!) // rules ensure this is present
 
         if (formState.folderId) formData.append('folderId', formState.folderId)
 
         formState.tagIds.forEach(id => formData.append('tagIds', id))
-        formData.append('file', formState.file)
 
         await apiUpload(formData)
 
@@ -224,6 +303,8 @@ const resetForm = () => {
     formState.categoryId = undefined
     formState.folderId = undefined
     formState.tagIds = []
+    formState.aiAutoName = false
+    formState.aiAutoClassify = false
     handleRemoveFile()
 }
 
@@ -293,10 +374,38 @@ const getFileTypeColor = (type: string) => {
     return 'default'
 }
 
+// AI Settings Persistence
+const loadAISettings = () => {
+    try {
+        const saved = localStorage.getItem('uploadAISettings')
+        if (saved) {
+            const settings = JSON.parse(saved)
+            formState.aiAutoName = settings.aiAutoName || false
+            formState.aiAutoClassify = settings.aiAutoClassify || false
+        }
+    } catch (e) {
+        console.error('Failed to load AI settings', e)
+    }
+}
+
+const saveAISettings = () => {
+    try {
+        localStorage.setItem('uploadAISettings', JSON.stringify({
+            aiAutoName: formState.aiAutoName,
+            aiAutoClassify: formState.aiAutoClassify
+        }))
+    } catch (e) {
+        console.error('Failed to save AI settings', e)
+    }
+}
+
 // Lifecycle
 onMounted(async () => {
     isMetaLoading.value = true
     try {
+        // Load AI settings first
+        loadAISettings()
+        
         // Parallel data fetching for speed
         await Promise.all([
             fetchDocuments(),
@@ -312,6 +421,21 @@ onMounted(async () => {
     } finally {
         isMetaLoading.value = false
     }
+})
+
+// Watchers - Clear values when AI auto modes are enabled & Save settings
+watch(() => formState.aiAutoName, (newVal) => {
+    if (newVal) {
+        formState.title = ''
+    }
+    saveAISettings()
+})
+
+watch(() => formState.aiAutoClassify, (newVal) => {
+    if (newVal) {
+        formState.categoryId = undefined
+    }
+    saveAISettings()
 })
 </script>
 
