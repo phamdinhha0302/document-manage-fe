@@ -199,6 +199,12 @@
       </Form>
     </Modal>
 
+    <Modal v-model:open="showRenameDocumentModal" title="Đổi tên tài liệu" @ok="handleRenameDocument">
+      <Form :model="editingDocument">
+        <FormItem label="Tiêu đề" required><Input v-model:value="editingDocument.title" /></FormItem>
+      </Form>
+    </Modal>
+
     <Modal v-model:open="showUploadModal" title="Tải lên tài liệu" width="700px" @ok="handleUploadDocument"
       :confirm-loading="isUploading || isAILoading">
       <Form :model="uploadForm" layout="vertical">
@@ -375,6 +381,10 @@ const showCreateFolderModal = ref(false)
 const showEditFolderModal = ref(false)
 const folderForm = ref({ name: '', description: '' })
 const editingFolder = ref({ _id: '', name: '', description: '' })
+
+// Rename Document
+const showRenameDocumentModal = ref(false)
+const editingDocument = ref({ _id: '', title: '' })
 
 const showUploadModal = ref(false)
 const isUploading = ref(false)
@@ -694,6 +704,7 @@ const showDocumentContextMenu = async (e: MouseEvent, doc: any) => {
 
   contextMenuItems.value = [
     { key: 'view', label: 'View', onClick: () => viewDocument(doc._id) },
+    { key: 'rename', label: 'Rename', onClick: () => openRenameDocumentModal(doc) },
     { key: 'download', label: 'Download', onClick: () => downloadDoc(doc._id, doc.fileName) },
     { type: 'divider' },
     { key: 'delete', label: 'Delete', danger: true, onClick: () => confirmDeleteDocument(doc._id) }
@@ -790,6 +801,26 @@ const confirmDeleteDocument = (id: string) => {
     title: 'Delete Document?', okType: 'danger',
     onOk: async () => { await deleteDoc(id); refreshFolders(); }
   })
+}
+
+// Rename Document
+const openRenameDocumentModal = (doc: any) => {
+  editingDocument.value = { _id: doc._id, title: doc.title }
+  showRenameDocumentModal.value = true
+}
+
+const handleRenameDocument = async () => {
+  if (!editingDocument.value.title.trim()) {
+    return message.error('Vui lòng nhập tiêu đề tài liệu')
+  }
+  try {
+    await documentAPI.updateDocument(editingDocument.value._id, { title: editingDocument.value.title })
+    message.success('Đổi tên tài liệu thành công')
+    showRenameDocumentModal.value = false
+    refreshFolders()
+  } catch (e: any) {
+    message.error(e.message || 'Đổi tên thất bại')
+  }
 }
 const handleCreateCategory = async () => {
   try {
